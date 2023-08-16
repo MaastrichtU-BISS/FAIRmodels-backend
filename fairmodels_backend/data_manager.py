@@ -30,7 +30,13 @@ class DataManager:
         return json.load(file)
     raise HTTPException(status_code=404, detail="Item not found")
 
-  def update_entity(self, entity_id, data):
+  def update_entity(self, entity_id, onnx_model: str, update_type: str, update_description: str):
+    data = {
+      onnx_model: onnx_model,
+      # version: '0.2.0', #     <-- TODO: version should be updated based on update_type. 
+      update_description: update_description
+    }
+
     file_path = self._get_file_path(entity_id)
     if os.path.isfile(file_path):
       with open(file_path, "w") as file:

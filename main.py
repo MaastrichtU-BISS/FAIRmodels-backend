@@ -1,5 +1,7 @@
+from typing import Optional
 from fastapi import FastAPI, Body
-
+from pydantic import BaseModel
+import uvicorn
 from fairmodels_backend.data_manager import DataManager
 
 app = FastAPI()
@@ -33,15 +35,21 @@ def read_model(model_id):
 
     return data
 
+
+class UpdateModelModel(BaseModel):
+    onnx_model: str
+    update_type: str
+    update_description: Optional[str] = None
+
 @app.patch("/model/{model_id}")
-def update_model(model_id, payload: dict = Body(...)):
+def update_model(model_id, data: UpdateModelModel):
     ModelDataManager = DataManager("model")
-    data = ModelDataManager.update_entity(model_id, payload)
+    data = ModelDataManager.update_entity(model_id, data.onnx_model, data.update_type, data.update_description)
 
     return data
 
 @app.delete("/model/{model_id}")
-def update_model(model_id):
+def delete_model(model_id):
     ModelDataManager = DataManager("model")
     ModelDataManager.delete_entity(model_id)
 
