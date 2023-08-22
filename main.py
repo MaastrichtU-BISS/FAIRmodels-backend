@@ -18,7 +18,8 @@ class CreateModelModel(BaseModel):
   metadata_id: Optional[str] = None
 
 class UpdateModelModel(BaseModel):
-  onnx_model: str
+  onnx_model: Optional[str]
+  metadata_id: Optional[str]
   update_type: str
   update_description: Optional[str] = None
 
@@ -55,7 +56,7 @@ def read_model(model_id):
 @app.patch("/model/{model_id}")
 def update_model(model_id, data: UpdateModelModel):
   ModelDataManager = DataManager("model")
-  data = ModelDataManager.update_entity(model_id, data.onnx_model, data.update_type, data.update_description)
+  data = ModelDataManager.update_entity(model_id, data.onnx_model, data.metadata_id, data.update_type, data.update_description)
 
   return data
 

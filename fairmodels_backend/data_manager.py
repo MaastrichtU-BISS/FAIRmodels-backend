@@ -19,6 +19,7 @@ class DataManager:
     entity_id = str(uuid.uuid4())
 
     data = {
+      "id": entity_id,
       "name": name,
       "description": description,
       "versions": [{
@@ -42,22 +43,46 @@ class DataManager:
         return json.load(file)
     raise HTTPException(status_code=404, detail="Item not found")
 
-  def update_entity(self, entity_id, onnx_model: str, metadata_id, update_type: str, update_description: str):
-    model_old = self.read_entity(entity_id)
-    print("model old:", model_old)
+  def update_entity(self, entity_id, onnx_model: str, metadata_id: str, update_type: str, update_description: str):
+    model = self.read_entity(entity_id)
+    
+    new_version = list(map(int, str(model['versions'][-1]['version']).split('.')))
+    if not len(new_version) == 3:
+      raise Exception("Version-number not in semantic format")
+    if update_type == 'major':
+      new_version[0] += 1
+      new_version[1] = 0
+      new_version[2] = 0
+    if update_type == 'minor':
+      new_version[1] += 1
+      new_version[2] = 0
+    if update_type == 'patch':
+      new_version[2] += 1
 
-    data = {
-      onnx_model: onnx_model,
-      # version: '0.2.0', #     <-- TODO: version should be updated based on update_type. 
-      update_description: update_description
+    new_version = '.'.join(map(str, new_version))
+
+    new_model_version = {
+      "version": new_version,
+      "onnx_model": onnx_model or model['onnx_model'],
+      "metadata_id": metadata_id or model['metadata_id'],
+      "update_description": update_description,
+      "created_at": str(datetime.now())
     }
+
+    model['versions'].append(new_model_version)
 
     file_path = self._get_file_path(entity_id)
     if os.path.isfile(file_path):
       with open(file_path, "w") as file:
-        json.dump(data, file)
+        json.dump(model, file)
     else:
       raise HTTPException(status_code=404, detail="Item not found")
+    
+    return {
+      "message": "Updated model successfully",
+      "version": new_version,
+      "id": entity_id
+    }
 
   def delete_entity(self, entity_id):
     file_path = self._get_file_path(entity_id)
