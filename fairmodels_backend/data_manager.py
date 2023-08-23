@@ -53,18 +53,20 @@ class DataManager:
       new_version[0] += 1
       new_version[1] = 0
       new_version[2] = 0
-    if update_type == 'minor':
+    elif update_type == 'minor':
       new_version[1] += 1
       new_version[2] = 0
-    if update_type == 'patch':
+    elif update_type == 'patch':
       new_version[2] += 1
+    else:
+      raise Exception("Invalid update-type")
 
     new_version = '.'.join(map(str, new_version))
 
     new_model_version = {
       "version": new_version,
-      "onnx_model": onnx_model or model['onnx_model'],
-      "metadata_id": metadata_id or model['metadata_id'],
+      "onnx_model": onnx_model or (model['onnx_model'] if 'onnx_model' in model else None),
+      "metadata_id": metadata_id or (model['metadata_id'] if 'metadata_id' in model else None),
       "update_description": update_description,
       "created_at": str(datetime.now())
     }
