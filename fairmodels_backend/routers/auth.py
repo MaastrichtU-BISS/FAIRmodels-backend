@@ -82,7 +82,6 @@ async def login(login_form: LoginBody):
         raise HTTPException(status_code=400, detail="Incorrect username or password")
     user = UserInDB(**user_dict)
     hashed_password = fake_hash_password(login_form.password)
-    print(hashed_password, user.hashed_password)
     if not hashed_password == user.hashed_password:
         raise HTTPException(status_code=400, detail="Incorrect username or password")
 
