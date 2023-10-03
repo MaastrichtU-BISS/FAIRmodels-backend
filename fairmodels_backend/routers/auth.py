@@ -5,12 +5,26 @@ from pydantic import BaseModel
 
 router = APIRouter(prefix="/auth")
 
-fake_users_db = {
-}
-
-
 def fake_hash_password(password: str):
     return "fakehashed-" + password
+
+
+fake_users_db = {
+    "johndoe": {
+        "username": "johndoe",
+        "full_name": "John Doe",
+        "email": "johndoe@example.com",
+        "hashed_password": fake_hash_password('secret'),
+        "disabled": False,
+    },
+    "alice": {
+        "username": "alice",
+        "full_name": "Alice Wonderson",
+        "email": "alice@example.com",
+        "hashed_password": fake_hash_password('secret2'),
+        "disabled": True,
+    },
+}
 
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
@@ -68,6 +82,7 @@ async def login(login_form: LoginBody):
         raise HTTPException(status_code=400, detail="Incorrect username or password")
     user = UserInDB(**user_dict)
     hashed_password = fake_hash_password(login_form.password)
+    print(hashed_password, user.hashed_password)
     if not hashed_password == user.hashed_password:
         raise HTTPException(status_code=400, detail="Incorrect username or password")
 
