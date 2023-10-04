@@ -6,7 +6,7 @@ from fastapi import HTTPException
 
 DATA_DIR = "local-data"
 
-class DataManager:
+class DataLayer:
   def __init__(self, entity_type):
     self.entity_type = entity_type
     self.data_dir = os.path.join(DATA_DIR, entity_type)
@@ -15,7 +15,85 @@ class DataManager:
   def _get_file_path(self, entity_id):
     return os.path.join(self.data_dir, f"{entity_id}.json")
 
-  def create_entity(self, name, description, onnx_model, metadata_id):
+class UserDataLayer(DataLayer):
+  def __init__(self):
+    super().__init__('user')
+
+  def create(self, username, password):
+    entity_id = str(uuid.uuid4())
+
+    data = {
+      "id": entity_id,
+      "username": username,
+      "password": password,
+      "apikeys": []
+    }
+
+    file_path = self._get_file_path(entity_id)
+    with open(file_path, "w") as file:
+      json.dump(data, file)
+    return entity_id
+
+  def read(self, entity_id):
+    file_path = self._get_file_path(entity_id)
+    if os.path.isfile(file_path):
+      with open(file_path, "r") as file:
+        return json.load(file)
+    raise HTTPException(status_code=404, detail="Item not found")
+
+  def update(self, entity_id, username = None, password = None):
+    entity = self.read(entity_id)
+
+    file_path = self._get_file_path(entity_id)
+    if os.path.isfile(file_path):
+      with open(file_path, "w") as file:
+        json.dump(entity, file)
+    else:
+      raise HTTPException(status_code=404, detail="Item not found")
+    
+    return {
+      "message": "Updated user successfully",
+      "id": entity_id
+    }
+  
+  def generate_apikey(self, entity_id):
+    entity = self.read(entity_id)
+
+    key = uuid.uuid5()
+    entity.apikeys.push(key)
+
+    file_path = self._get_file_path(entity_id)
+    if os.path.isfile(file_path):
+      with open(file_path, "w") as file:
+        json.dump(entity, file)
+    else:
+      raise HTTPException(status_code=404, detail="Item not found")
+    
+    return {
+      "key": key
+    }
+  
+  def revoke_apikey(self, entity_id, key):
+    entity = self.read(entity_id)
+
+    entity.apikeys.remove(key)
+
+    file_path = self._get_file_path(entity_id)
+    if os.path.isfile(file_path):
+      with open(file_path, "w") as file:
+        json.dump(entity, file)
+    else:
+      raise HTTPException(status_code=404, detail="Item not found")
+    
+    return {
+      "message": "Successfully revoked apikey"
+    }
+
+class ModelDataLayer(DataLayer):
+  def __init__(self):
+    super().__init__('model')
+
+  def create(self, name, description, onnx_model, metadata_id):
     entity_id = str(uuid.uuid4())
 
     data = {
@@ -36,15 +114,15 @@ class DataManager:
       json.dump(data, file)
     return entity_id
 
-  def read_entity(self, entity_id):
+  def read(self, entity_id):
     file_path = self._get_file_path(entity_id)
     if os.path.isfile(file_path):
       with open(file_path, "r") as file:
         return json.load(file)
     raise HTTPException(status_code=404, detail="Item not found")
 
-  def update_entity(self, entity_id, onnx_model: str, metadata_id: str, update_type: str, update_description: str):
-    model = self.read_entity(entity_id)
+  def update(self, entity_id, onnx_model: str, metadata_id: str, update_type: str, update_description: str):
+    model = self.read(entity_id)
     
     new_version = list(map(int, str(model['versions'][-1]['version']).split('.')))
     if not len(new_version) == 3:
@@ -86,14 +164,14 @@ class DataManager:
       "id": entity_id
     }
 
-  def delete_entity(self, entity_id):
+  def delete(self, entity_id):
     file_path = self._get_file_path(entity_id)
     if os.path.isfile(file_path):
       os.remove(file_path)
     else:
       raise HTTPException(status_code=404, detail="Item not found")
 
-  def list_entities(self):
+  def list(self):
     entity_ids = []
     for filename in os.listdir(self.data_dir):
       if filename.endswith(".json"):
