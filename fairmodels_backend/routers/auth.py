@@ -3,9 +3,11 @@ from fastapi import Depends, APIRouter, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel
 
+from fairmodels_backend.data_manager import UserDataLayer
+
 router = APIRouter(prefix="/auth")
 
-def fake_hash_password(password: str):
+def hash_password(password: str):
     return "fakehashed-" + password
 
 
@@ -14,14 +16,14 @@ fake_users_db = {
         "username": "johndoe",
         "full_name": "John Doe",
         "email": "johndoe@example.com",
-        "hashed_password": fake_hash_password('secret'),
+        "hashed_password": hash_password('secret'),
         "disabled": False,
     },
     "alice": {
         "username": "alice",
         "full_name": "Alice Wonderson",
         "email": "alice@example.com",
-        "hashed_password": fake_hash_password('secret2'),
+        "hashed_password": hash_password('secret2'),
         "disabled": True,
     },
 }
@@ -34,7 +36,6 @@ class User(BaseModel):
     email: Union[str, None] = None
     full_name: Union[str, None] = None
     disabled: Union[bool, None] = None
-
 
 class UserInDB(User):
     hashed_password: str
@@ -71,9 +72,21 @@ async def get_current_active_user(
         raise HTTPException(status_code=400, detail="Inactive user")
     return current_user
 
+class RegisterBody(BaseModel):
+    username: str
+    password: str
+
 class LoginBody(BaseModel):
     username: str
     password: str
+
+@router.post("/register")
+async def register(req: RegisterBody):
+    UserData = UserDataLayer()
+
+    UserData.create(req.username, hash_password(req.password))
+
+    return {"success": True}
 
 @router.post("/token")
 async def login(login_form: LoginBody):
@@ -81,18 +94,17 @@ async def login(login_form: LoginBody):
     if not user_dict:
         raise HTTPException(status_code=400, detail="Incorrect username or password")
     user = UserInDB(**user_dict)
-    hashed_password = fake_hash_password(login_form.password)
+    hashed_password = hash_password(login_form.password)
     if not hashed_password == user.hashed_password:
         raise HTTPException(status_code=400, detail="Incorrect username or password")
 
     return {"access_token": user.username, "token_type": "bearer"}
 
-
 @router.get("/me")
 async def read_users_me(
     current_user: Annotated[User, Depends(get_current_active_user)]
 ):
-    return current_user 
+    return current_user
 
 # Legacy:
 # @app.get("/auth_link")
