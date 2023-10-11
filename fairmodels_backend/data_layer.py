@@ -5,6 +5,7 @@ from datetime import datetime
 from fastapi import HTTPException
 from secrets import token_hex
 from glob import glob
+import re
 
 DATA_DIR = "local-data"
 
@@ -17,24 +18,34 @@ class DataLayer:
   def find_by_id(self, entity_id):
     return os.path.join(self.data_dir, f"{entity_id}.json")
 
+class UserNotFoundException(Exception):
+  pass
+
 class UserDataLayer(DataLayer):
   def __init__(self):
     super().__init__('user')
 
   def find_by_username(self, username):
-    for file in glob(os.path.join(DATA_DIR, '/user/*.json')):
-      data = self.read(file)
-      if data.username == username:
-        return data
-    raise Exception("User not found")
+    for file in glob(os.path.join(DATA_DIR, 'user/*.json')):
+      user_id = re.findall(r'user\/(.*?)\.json', file)[0]
+      try:
+        data = self.read(user_id)
+        if data['username'] == username:
+          return data
+      except HTTPException as e:
+        if (e.detail == "Item not found"):
+          continue
+    raise UserNotFoundException("User not found")
 
   def create(self, username, password):
+    # search_user
     try:
       self.find_by_username(username)
-      raise Exception("User already exists")
-    except:
+    except UserNotFoundException as e:
       pass
-
+    else:
+      raise HTTPException(status_code=400, detail="This username is not available")
+    
     entity_id = str(uuid.uuid4())
 
     data = {
@@ -71,7 +82,7 @@ class UserDataLayer(DataLayer):
       "id": entity_id
     }
   
-  def generate_apikey(self, entity_id):
+  def generate_api_key(self, entity_id):
     entity = self.read(entity_id)
     
     key = token_hex(32)
