@@ -1,5 +1,4 @@
 from fastapi import FastAPI
-import uvicorn
 from dotenv import load_dotenv
 import routers as r
 
