@@ -3,6 +3,8 @@ import json
 import uuid
 from datetime import datetime
 from fastapi import HTTPException
+from secrets import token_hex
+from glob import glob
 
 DATA_DIR = "local-data"
 
@@ -12,14 +14,27 @@ class DataLayer:
     self.data_dir = os.path.join(DATA_DIR, entity_type)
     os.makedirs(self.data_dir, exist_ok=True)
 
-  def _get_file_path(self, entity_id):
+  def find_by_id(self, entity_id):
     return os.path.join(self.data_dir, f"{entity_id}.json")
 
 class UserDataLayer(DataLayer):
   def __init__(self):
     super().__init__('user')
 
+  def find_by_username(self, username):
+    for file in glob(os.path.join(DATA_DIR, '/user/*.json')):
+      data = self.read(file)
+      if data.username == username:
+        return data
+    raise Exception("User not found")
+
   def create(self, username, password):
+    try:
+      self.find_by_username(username)
+      raise Exception("User already exists")
+    except:
+      pass
+
     entity_id = str(uuid.uuid4())
 
     data = {
@@ -29,13 +44,13 @@ class UserDataLayer(DataLayer):
       "apikeys": []
     }
 
-    file_path = self._get_file_path(entity_id)
+    file_path = self.find_by_id(entity_id)
     with open(file_path, "w") as file:
       json.dump(data, file)
     return entity_id
 
   def read(self, entity_id):
-    file_path = self._get_file_path(entity_id)
+    file_path = self.find_by_id(entity_id)
     if os.path.isfile(file_path):
       with open(file_path, "r") as file:
         return json.load(file)
@@ -44,7 +59,7 @@ class UserDataLayer(DataLayer):
   def update(self, entity_id, username = None, password = None):
     entity = self.read(entity_id)
 
-    file_path = self._get_file_path(entity_id)
+    file_path = self.find_by_id(entity_id)
     if os.path.isfile(file_path):
       with open(file_path, "w") as file:
         json.dump(entity, file)
@@ -58,11 +73,11 @@ class UserDataLayer(DataLayer):
   
   def generate_apikey(self, entity_id):
     entity = self.read(entity_id)
-
-    key = uuid.uuid5()
+    
+    key = token_hex(32)
     entity.apikeys.push(key)
 
-    file_path = self._get_file_path(entity_id)
+    file_path = self.find_by_id(entity_id)
     if os.path.isfile(file_path):
       with open(file_path, "w") as file:
         json.dump(entity, file)
@@ -78,7 +93,7 @@ class UserDataLayer(DataLayer):
 
     entity.apikeys.remove(key)
 
-    file_path = self._get_file_path(entity_id)
+    file_path = self.find_by_id(entity_id)
     if os.path.isfile(file_path):
       with open(file_path, "w") as file:
         json.dump(entity, file)
@@ -109,13 +124,13 @@ class ModelDataLayer(DataLayer):
       }]
     }
 
-    file_path = self._get_file_path(entity_id)
+    file_path = self.find_by_id(entity_id)
     with open(file_path, "w") as file:
       json.dump(data, file)
     return entity_id
 
   def read(self, entity_id):
-    file_path = self._get_file_path(entity_id)
+    file_path = self.find_by_id(entity_id)
     if os.path.isfile(file_path):
       with open(file_path, "r") as file:
         return json.load(file)
@@ -151,7 +166,7 @@ class ModelDataLayer(DataLayer):
 
     model['versions'].append(new_model_version)
 
-    file_path = self._get_file_path(entity_id)
+    file_path = self.find_by_id(entity_id)
     if os.path.isfile(file_path):
       with open(file_path, "w") as file:
         json.dump(model, file)
@@ -165,7 +180,7 @@ class ModelDataLayer(DataLayer):
     }
 
   def delete(self, entity_id):
-    file_path = self._get_file_path(entity_id)
+    file_path = self.find_by_id(entity_id)
     if os.path.isfile(file_path):
       os.remove(file_path)
     else:
