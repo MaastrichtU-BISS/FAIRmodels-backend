@@ -4,6 +4,7 @@
 
 ```json
 {
+  "id": "1ae914cf-a5e7-47ed-bee4-395f98e03440",
   "name": "Example Model",
   "description": "Description for this example model",
   "versions": [
