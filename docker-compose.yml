@@ -1,0 +1,22 @@
+version: '3'
+services:
+  server:
+    build:
+      context: .
+      dockerfile: fairmodels_backend/Dockerfile
+    ports:
+      - "8000:8000"  # Expose the FastAPI server port
+    depends_on:
+      - graphdb
+    volumes:
+      - ./fairmodels_backend:/opt/app
+
+  graphdb:
+    image: ontotext/graphdb:9.11.2-se
+    ports:
+      - "7200:7200"
+    environment:
+      - GRAPHDB_USERNAME=FAIRmodels_dev
+      - GRAPHDB_PASSWORD=FAIRmodels_dev
+      - GRAPHDB_REPO_NAME=FAIRmodels_dev
+      - LICENSE_ACCEPTED=true
