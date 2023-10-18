@@ -1,11 +1,40 @@
-from typing import Annotated, Union
+from datetime import time
+from typing import Annotated, Dict, Union
 from fastapi import Depends, APIRouter, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from pydantic import BaseModel
 from data_layer import UserDataLayer, UserNotFoundException
 import bcrypt
+import jwt
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+JWT_SECRET = os.getenv('JWT_SECRET')
+JWT_ALGORITHM = os.getenv('JWT_ALGORITHM')
 
 router = APIRouter(prefix="/auth")
+
+# https://testdriven.io/blog/fastapi-jwt-auth/
+def token_response(token: str):
+    return {
+        "access_token": token
+    }
+def sign_jwt(username: str) -> Dict[str, str]:
+    payload = {
+        "username": username,
+        "expires": time() + 600
+    }
+    token = jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
+
+    return token_response(token)
+
+def decode_jwt(token: str) -> Union[dict, None]:
+    try:
+        decoded_token = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        return decoded_token if decoded_token["expires"] >= time.time() else None
+    except:
+        return None
 
 def password_hash(password: str):
     # print("hashing ", bytes.decode(bcrypt.hashpw("haa".encode('utf-8'), bcrypt.gensalt())) )
@@ -16,6 +45,7 @@ def password_check(password: str, hash: str):
     return bcrypt.checkpw(password.encode('utf-8'), hash)
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
 
 class User(BaseModel):
     id: str
@@ -43,7 +73,8 @@ def fake_decode_token(token):
     return user
 
 async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
-    user = fake_decode_token(token)
+    username = decode_jwt(token)
+    user = get_user(username)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -70,16 +101,15 @@ async def register(req: RegisterBody):
 
 @router.post("/token")
 async def login(login_form: LoginBody):
-    user_layer = UserDataLayer()
+    # user_layer = UserDataLayer()
     user = get_user(login_form.username)
-    print("USER:", user)
     if not user:
         raise HTTPException(status_code=400, detail="Incorrect username or password")
     # user = UserInDB(**user_dict)
     if not password_check(login_form.password, user.password_hash):
         raise HTTPException(status_code=400, detail="Incorrect username or password")
 
-    return {"access_token": user.username, "token_type": "bearer"}
+    return sign_jwt(user.username)
 
 @router.post("/generate_api_key")
 async def generate_api_key(
