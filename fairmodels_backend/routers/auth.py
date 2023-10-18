@@ -1,8 +1,8 @@
 from typing import Annotated, Union
 from fastapi import Depends, APIRouter, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi.security import OAuth2PasswordBearer
 from pydantic import BaseModel
-from data_layer import UserDataLayer
+from data_layer import UserDataLayer, UserNotFoundException
 import bcrypt
 
 router = APIRouter(prefix="/auth")
@@ -20,19 +20,21 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 class User(BaseModel):
     id: str
     username: str
-    email: Union[str, None] = None
-    full_name: Union[str, None] = None
-    disabled: Union[bool, None] = None
+    # email: Union[str, None] = None
+    # full_name: Union[str, None] = None
+    # disabled: Union[bool, None] = None
 
 class UserInDB(User):
-    hashed_password: str
+    password_hash: str
 
 
 def get_user(username: str):
-    user_layer = UserDataLayer()
-    user = user_layer.find_by_username()
-    return UserInDB(**user)
-
+    try:
+        user_layer = UserDataLayer()
+        user = user_layer.find_by_username(username)
+        return UserInDB(**user)
+    except UserNotFoundException:
+        return None
 
 def fake_decode_token(token):
     # This doesn't provide any security at all
@@ -69,11 +71,12 @@ async def register(req: RegisterBody):
 @router.post("/token")
 async def login(login_form: LoginBody):
     user_layer = UserDataLayer()
-    user_dict = user_layer.find_by_username(login_form.username)
-    if not user_dict:
+    user = get_user(login_form.username)
+    print("USER:", user)
+    if not user:
         raise HTTPException(status_code=400, detail="Incorrect username or password")
-    user = UserInDB(**user_dict)
-    if not password_check(login_form.password, user.hashed_password):
+    # user = UserInDB(**user_dict)
+    if not password_check(login_form.password, user.password_hash):
         raise HTTPException(status_code=400, detail="Incorrect username or password")
 
     return {"access_token": user.username, "token_type": "bearer"}

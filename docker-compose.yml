@@ -5,7 +5,7 @@ services:
       context: .
       dockerfile: fairmodels_backend/Dockerfile
     ports:
-      - "8000:8000"  # Expose the FastAPI server port
+      - "8000:8000"
     depends_on:
       - graphdb
     volumes:

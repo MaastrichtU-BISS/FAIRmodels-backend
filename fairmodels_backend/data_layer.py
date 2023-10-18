@@ -37,7 +37,7 @@ class UserDataLayer(DataLayer):
           continue
     raise UserNotFoundException("User not found")
 
-  def create(self, username, password):
+  def create(self, username, password_hash):
     # search_user
     try:
       self.find_by_username(username)
@@ -51,7 +51,7 @@ class UserDataLayer(DataLayer):
     data = {
       "id": entity_id,
       "username": username,
-      "password": password,
+      "password_hash": password_hash,
       "apikeys": []
     }
 
