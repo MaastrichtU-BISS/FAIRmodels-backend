@@ -10,6 +10,7 @@ services:
       - graphdb
     volumes:
       - ./fairmodels_backend:/opt/app
+    env_file: .env
 
   graphdb:
     image: ontotext/graphdb:9.11.2-se
