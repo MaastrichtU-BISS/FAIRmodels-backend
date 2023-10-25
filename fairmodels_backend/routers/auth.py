@@ -1,4 +1,4 @@
-from datetime import time
+from time import time
 from typing import Annotated, Dict, Union
 from fastapi import Depends, APIRouter, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
@@ -37,22 +37,16 @@ def decode_jwt(token: str) -> Union[dict, None]:
         return None
 
 def password_hash(password: str):
-    # print("hashing ", bytes.decode(bcrypt.hashpw("haa".encode('utf-8'), bcrypt.gensalt())) )
-    # return str(bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()))
     return bytes.decode(bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()))
 
 def password_check(password: str, hash: str):
-    return bcrypt.checkpw(password.encode('utf-8'), hash)
+    return bcrypt.checkpw(password.encode('utf-8'), hash.encode('utf-8'))
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
-
 
 class User(BaseModel):
     id: str
     username: str
-    # email: Union[str, None] = None
-    # full_name: Union[str, None] = None
-    # disabled: Union[bool, None] = None
 
 class UserInDB(User):
     password_hash: str
@@ -65,12 +59,6 @@ def get_user(username: str):
         return UserInDB(**user)
     except UserNotFoundException:
         return None
-
-def fake_decode_token(token):
-    # This doesn't provide any security at all
-    # Check the next version
-    user = get_user(token)
-    return user
 
 async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
     username = decode_jwt(token)
@@ -101,17 +89,15 @@ async def register(req: RegisterBody):
 
 @router.post("/token")
 async def login(login_form: LoginBody):
-    # user_layer = UserDataLayer()
     user = get_user(login_form.username)
     if not user:
         raise HTTPException(status_code=400, detail="Incorrect username or password")
-    # user = UserInDB(**user_dict)
     if not password_check(login_form.password, user.password_hash):
         raise HTTPException(status_code=400, detail="Incorrect username or password")
 
     return sign_jwt(user.username)
 
-@router.post("/generate_api_key")
+@router.get("/generate_api_key")
 async def generate_api_key(
     user: Annotated[User, Depends(get_current_user)]
 ):
