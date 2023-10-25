@@ -86,7 +86,7 @@ class UserDataLayer(DataLayer):
     entity = self.read(entity_id)
     
     key = token_hex(32)
-    entity.apikeys.push(key)
+    entity['apikeys'].append(key)
 
     file_path = self.find_by_id(entity_id)
     if os.path.isfile(file_path):

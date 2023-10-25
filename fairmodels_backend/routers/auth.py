@@ -32,7 +32,7 @@ def sign_jwt(username: str) -> Dict[str, str]:
 def decode_jwt(token: str) -> Union[dict, None]:
     try:
         decoded_token = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
-        return decoded_token if decoded_token["expires"] >= time.time() else None
+        return decoded_token if decoded_token["expires"] >= time() else None
     except:
         return None
 
@@ -60,9 +60,10 @@ def get_user(username: str):
     except UserNotFoundException:
         return None
 
+# Q: is Depends(oauth2 still necessary?)
 async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
-    username = decode_jwt(token)
-    user = get_user(username)
+    payload = decode_jwt(token)
+    user = get_user(payload['username'])
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -102,7 +103,7 @@ async def generate_api_key(
     user: Annotated[User, Depends(get_current_user)]
 ):
     user_layer = UserDataLayer()
-    user_layer.generate_api_key(user.id)
+    return user_layer.generate_api_key(user.id)
 
 @router.get("/me")
 async def read_users_me(
