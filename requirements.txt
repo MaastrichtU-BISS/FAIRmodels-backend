@@ -5,3 +5,5 @@ orcid
 bcrypt
 PyJWT
 Django
+djangorestframework
+django-filter
