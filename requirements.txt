@@ -4,3 +4,4 @@ uvicorn
 orcid
 bcrypt
 PyJWT
+Django
