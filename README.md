@@ -47,3 +47,9 @@ Running the server is as simple as executing the `main.py` file with python3:
 ```sh
 python3 main.py
 ```
+
+Or running with docker:
+
+```sh
+docker compose up --build
+```
