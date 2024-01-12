@@ -177,6 +177,9 @@ APPEND_SLASH=False
 
 # Disable username and use email as primary (from https://stackoverflow.com/a/66497346/17864167)
 ACCOUNT_AUTHENTICATION_METHOD = 'email'
-ACCOUNT_USER_MODEL_USERNAME_FIELD = None
+# Update: according to: https://github.com/pennersr/django-allauth/issues/1014#issuecomment-121245406
+# following field should be usernmae instead of None
+# ACCOUNT_USER_MODEL_USERNAME_FIELD = None
+ACCOUNT_USER_MODEL_USERNAME_FIELD = 'username'
 ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_USERNAME_REQUIRED = False
