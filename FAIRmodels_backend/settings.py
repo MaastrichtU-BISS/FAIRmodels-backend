@@ -49,6 +49,8 @@ INSTALLED_APPS = [
     'allauth.account',
     
     'dj_rest_auth.registration',
+    
+    'corsheaders',
 
     'api'
 ]
@@ -66,6 +68,9 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 
     "allauth.account.middleware.AccountMiddleware",
+
+    "corsheaders.middleware.CorsMiddleware",
+    "django.middleware.common.CommonMiddleware",
 ]
 
 ROOT_URLCONF = 'FAIRmodels_backend.urls'
@@ -156,6 +161,12 @@ REST_AUTH = {
     'USE_JWT': True,
     'JWT_AUTH_HTTPONLY': False # https://stackoverflow.com/a/75598507
 }
+
+# cors
+
+CORS_ALLOWED_ORIGINS = [
+    'http://localhost:9000',
+]
 
 # allauth configuration
 
