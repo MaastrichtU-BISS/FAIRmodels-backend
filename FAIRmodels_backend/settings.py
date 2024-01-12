@@ -173,4 +173,10 @@ CORS_ALLOWED_ORIGINS = [
 ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_EMAIL_VERIFICATION = 'none' # https://stackoverflow.com/a/56569472
 
-# APPEND_SLASH=False
+APPEND_SLASH=False
+
+# Disable username and use email as primary (from https://stackoverflow.com/a/66497346/17864167)
+ACCOUNT_AUTHENTICATION_METHOD = 'email'
+ACCOUNT_USER_MODEL_USERNAME_FIELD = None
+ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_USERNAME_REQUIRED = False
