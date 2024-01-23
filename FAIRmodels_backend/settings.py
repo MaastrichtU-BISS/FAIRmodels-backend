@@ -184,6 +184,10 @@ ACCOUNT_USER_MODEL_USERNAME_FIELD = 'username'
 ACCOUNT_USERNAME_REQUIRED = False
 ACCOUNT_UNIQUE_EMAIL = True
 
+SIMPLE_JWT = {
+    "ROTATE_REFRESH_TOKENS": True
+}
+
 # Following is added to enable registration with email instead of username
 AUTHENTICATION_BACKENDS = (
  # Needed to login by username in Django admin, regardless of `allauth`
