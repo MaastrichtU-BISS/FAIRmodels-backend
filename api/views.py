@@ -18,10 +18,10 @@ def models_view(req):
         if not req.user.is_authenticated:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
 
-        serialized = FairmodelSerializer(data=req.data)
+        serialized = FairmodelSerializer(data=req.data, context={ 'request': req})
         if serialized.is_valid():
-            serialized.save()
-            return Response({'message': 'Successfully created', 'id': serialized.data['id']})
+            model = serialized.create()
+            return Response({'message': 'Successfully created', 'id': model.id})
         else:
             return Response({'message': 'Failed to create model', 'detail': serialized.errors}, status=status.HTTP_400_BAD_REQUEST)
 
