@@ -11,6 +11,9 @@ class FairmodelSerializer(serializers.ModelSerializer):
         fm.user = request.user
         fm.save()
         return fm
+
+    def update(self, instance, validated_data):
+        return super().update(instance, validated_data)
         
     class Meta:
         model = Fairmodel
