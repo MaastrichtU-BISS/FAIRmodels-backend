@@ -4,10 +4,12 @@ from rest_framework import status
 from .models import Fairmodel, FairmodelVersion
 from .serializers import FairmodelSerializer, FairmodelVersionSerializer
 
+# /
 @api_view(['GET'])
 def index(req):
     return Response({"Hello": "World"})
 
+# /model
 @api_view(['GET', 'POST'])
 def models_view(req):
     if req.method == 'GET':
@@ -20,27 +22,31 @@ def models_view(req):
 
         serialized = FairmodelSerializer(data=req.data, context={ 'request': req})
         if serialized.is_valid():
-            model = serialized.create()
-            return Response({'message': 'Successfully created', 'id': model.id})
+            fairmodel = serialized.create(serialized.validated_data)
+            return Response({'message': 'Successfully created', 'id': fairmodel.id})
         else:
             return Response({'message': 'Failed to create model', 'detail': serialized.errors}, status=status.HTTP_400_BAD_REQUEST)
 
+# /model/id
 @api_view(['GET', 'PUT', 'DELETE'])
 def model_view(req, model_id):
     try:
-        fairmodel = Fairmodel.objects.get(pk=id)
+        fairmodel = Fairmodel.objects.get(pk=model_id)
     except Fairmodel.DoesNotExist:
         return Response({'message': 'The given ID was not found in the database'}, status=status.HTTP_404_NOT_FOUND)
+    
+    if not req.user.is_authenticated:
+        return Response(status=status.HTTP_401_UNAUTHORIZED)
 
     if req.method == 'GET':
         serialized = FairmodelSerializer(fairmodel)
         return Response({'fairmodel': serialized.data})
     
     elif req.method == 'PUT':
-        serialized = FairmodelSerializer(req.data)
+        serialized = FairmodelSerializer(fairmodel, data=req.data)
         if serialized.is_valid():
             serialized.save()
-            return Response({'message': 'Updated successfully', 'fairmodel': serialized})
+            return Response({'message': 'Updated successfully', 'fairmodel': serialized.data})
     
     elif req.method == 'DELETE':
         fairmodel.delete()
