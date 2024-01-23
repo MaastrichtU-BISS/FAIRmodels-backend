@@ -20,10 +20,11 @@ def models_view(req):
         if not req.user.is_authenticated:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
 
+        req.data['user'] = req.user.id
         serialized = FairmodelSerializer(data=req.data, context={ 'request': req})
         if serialized.is_valid():
-            fairmodel = serialized.create(serialized.validated_data)
-            return Response({'message': 'Successfully created', 'id': fairmodel.id})
+            created = serialized.save()
+            return Response({'message': f"Successfully created with id: {created.id}",id: created.id})
         else:
             return Response({'message': 'Failed to create model', 'detail': serialized.errors}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -34,21 +35,24 @@ def model_view(req, model_id):
         fairmodel = Fairmodel.objects.get(pk=model_id)
     except Fairmodel.DoesNotExist:
         return Response({'message': 'The given ID was not found in the database'}, status=status.HTTP_404_NOT_FOUND)
-    
-    if not req.user.is_authenticated:
-        return Response(status=status.HTTP_401_UNAUTHORIZED)
 
     if req.method == 'GET':
         serialized = FairmodelSerializer(fairmodel)
         return Response({'fairmodel': serialized.data})
     
     elif req.method == 'PUT':
-        serialized = FairmodelSerializer(fairmodel, data=req.data)
+        if not req.user.is_authenticated or not req.user.id == fairmodel.user.id:
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
+        serialized = FairmodelSerializer(fairmodel, data=req.data, partial=True)
         if serialized.is_valid():
             serialized.save()
             return Response({'message': 'Updated successfully', 'fairmodel': serialized.data})
+        else:
+            return Response({'message': 'Failed to update model', 'detail': serialized.errors}, status=status.HTTP_400_BAD_REQUEST)
     
     elif req.method == 'DELETE':
+        if not req.user.is_authenticated or not req.user.id == fairmodel.user.id:
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
         fairmodel.delete()
         return Response({'message': 'Deleted successfully'})
 
