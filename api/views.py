@@ -24,7 +24,7 @@ def models_view(req):
         serialized = FairmodelSerializer(data=req.data, context={ 'request': req})
         if serialized.is_valid():
             created = serialized.save()
-            return Response({'message': f"Successfully created with id: {created.id}",id: created.id})
+            return Response({'message': "Successfully created", 'id': created.id})
         else:
             return Response({'message': 'Failed to create model', 'detail': serialized.errors}, status=status.HTTP_400_BAD_REQUEST)
 
