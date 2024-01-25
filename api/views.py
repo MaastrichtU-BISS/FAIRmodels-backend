@@ -23,12 +23,12 @@ def models_view(req):
         req.data['user'] = req.user.id
         serialized = FairmodelSerializer(data=req.data, context={ 'request': req})
         if serialized.is_valid():
-            created = serialized.save()
-            return Response({'message': "Successfully created", 'id': created.id})
+            serialized.save()
+            return Response({'message': "Successfully created", 'fairmodel': serialized.data})
         else:
             return Response({'message': 'Failed to create model', 'detail': serialized.errors}, status=status.HTTP_400_BAD_REQUEST)
 
-# /model/id
+# /model/model_id
 @api_view(['GET', 'PUT', 'DELETE'])
 def model_view(req, model_id):
     try:
@@ -56,6 +56,7 @@ def model_view(req, model_id):
         fairmodel.delete()
         return Response({'message': 'Deleted successfully'})
 
+# /model/model_id/version/
 @api_view(['GET', 'POST'])
 def modelversions_view(req, model_id):
     try:
@@ -98,16 +99,44 @@ def modelversions_view(req, model_id):
         del req.data['update_type']
         serialized = FairmodelVersionSerializer(data=req.data, context={ 'request': req})
         if serialized.is_valid():
-            created = serialized.save()
-            return Response({'message': "Successfully created", 'id': created.id})
+            serialized.save()
+            return Response({'message': "Successfully created", 'version': serialized.data})
         else:
             return Response({'message': 'Failed to create model', 'detail': serialized.errors}, status=status.HTTP_400_BAD_REQUEST)
 
-
-
-@api_view(['GET', 'POST'])
+# /model/model_id/version/version_id
+@api_view(['GET', 'PUT', 'DELETE'])
 def modelversion_view(req, model_id, version_id):
+    try:
+        fairmodel = Fairmodel.objects.get(pk=model_id)
+        fairmodel_version = FairmodelVersion.objects.get(pk=version_id)
+    except Fairmodel.DoesNotExist or FairmodelVersion.DoesNotExist:
+        return Response({'message': 'The given ID was not found in the database'}, status=status.HTTP_404_NOT_FOUND)
+
+    # user is authenticated
+    # user is owner of the model
+    # version belongs to model
+    if not req.user.is_authenticated or not req.user.id == fairmodel.user.id or not fairmodel_version.fairmodel.id == model_id:
+        return Response(status=status.HTTP_401_UNAUTHORIZED)
+    
     if req.method == "GET":
-        pass
-    elif req.method == "GET":
-        pass
+        serialized_model = FairmodelSerializer(fairmodel)
+        serialized_version = FairmodelVersionSerializer(fairmodel_version)
+        return Response({'fairmodel': serialized_model.data, 'version': serialized_version.data })
+
+    elif req.method == "PUT":
+        if fairmodel_version.metadata_id:
+            return Response({'message': 'This version already has "metadata_id" and cannot be updated again. Create a new version instead.'}, status=status.HTTP_400_BAD_REQUEST)
+        if not req.data['metadata_id']:
+            return Response({'message': 'Expected parameter: only "metadata_id"'}, status=status.HTTP_400_BAD_REQUEST)
+
+        serialized_version = FairmodelVersionSerializer(fairmodel_version, data={'metadata_id': req.data['metadata_id']}, partial=True)
+        if serialized_version.is_valid():
+            serialized_version.save()
+            return Response({'message': 'Updated successfully', 'version': serialized_version.data})
+        else:
+            return Response({'message': 'Failed to update model', 'detail': serialized_version.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+    # elif req.method == "DELETE":
+    #     fairmodel_version.delete()
+    #     return Response({'message': 'Deleted successfully'})
