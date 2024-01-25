@@ -7,5 +7,6 @@ local-data/
 venv/
 .env
 .venv
+storage
 
 *.sqlite3

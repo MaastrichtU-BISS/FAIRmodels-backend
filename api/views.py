@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from .models import Fairmodel, FairmodelVersion
 from .serializers import FairmodelSerializer, FairmodelVersionSerializer
+from pathlib import Path
 
 # /
 @api_view(['GET'])
@@ -140,3 +141,30 @@ def modelversion_view(req, model_id, version_id):
     # elif req.method == "DELETE":
     #     fairmodel_version.delete()
     #     return Response({'message': 'Deleted successfully'})
+
+# /model/model_id/version/version_id/upload_onnx
+@api_view(['POST'])
+def upload_onnx(req, model_id, version_id):
+    try:
+        fairmodel = Fairmodel.objects.get(pk=model_id)
+        fairmodel_version = FairmodelVersion.objects.get(pk=version_id)
+    except Fairmodel.DoesNotExist or FairmodelVersion.DoesNotExist:
+        return Response({'message': 'The given ID was not found in the database'}, status=status.HTTP_404_NOT_FOUND)
+
+    if not req.user.is_authenticated or not req.user.id == fairmodel.user.id or not fairmodel_version.fairmodel.id == model_id:
+        return Response(status=status.HTTP_401_UNAUTHORIZED)
+
+    if req.method == "POST":
+        output_path = Path('storage/' + str(fairmodel.id) + '/' + str(fairmodel_version.id) + '.onnx')
+        try:
+            f = open(output_path, 'r')
+            return Response({'message': 'This version already has a model'}, status=status.HTTP_400_BAD_REQUEST)
+        except:
+            uploaded_file = req.data['file']
+            output_path.parent.mkdir(exist_ok=True, parents=True)
+            for c in uploaded_file.chunks():
+                output_path.write_bytes(c)
+            return Response({'message': 'Uploaded successfully'}, status.HTTP_201_CREATED)
+
+        
+
