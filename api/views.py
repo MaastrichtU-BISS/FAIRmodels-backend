@@ -71,7 +71,7 @@ def modelversions_view(req, model_id):
     if req.method == 'GET':
         fairmodel_versions = FairmodelVersion.objects.filter(fairmodel=fairmodel).all()
         serialized = FairmodelVersionSerializer(fairmodel_versions, many=True)
-        return Response({'fairmodelversions': serialized.data})
+        return Response({'fairmodelversions': map(lambda x: {'version': x, 'onnx_file': get_onnx_model(fairmodel.id, x['id'])}, serialized.data)})
     
     elif req.method == 'POST':
         last_version = FairmodelVersion.objects.filter(fairmodel=fairmodel).order_by('-created_at').first()
@@ -121,9 +121,9 @@ def modelversion_view(req, model_id, version_id):
         return Response(status=status.HTTP_401_UNAUTHORIZED)
     
     if req.method == "GET":
-        serialized_model = FairmodelSerializer(fairmodel)
+        onnx_file = get_onnx_model(fairmodel.id, fairmodel_version.id)
         serialized_version = FairmodelVersionSerializer(fairmodel_version)
-        return Response({'fairmodel': serialized_model.data, 'version': serialized_version.data })
+        return Response({'fairmodelversion': serialized_version.data, 'onnx_file': onnx_file })
 
     elif req.method == "PUT":
         if fairmodel_version.metadata_id:
@@ -165,6 +165,16 @@ def upload_onnx(req, model_id, version_id):
             for c in uploaded_file.chunks():
                 output_path.write_bytes(c)
             return Response({'message': 'Uploaded successfully'}, status.HTTP_201_CREATED)
+
+def get_onnx_model(model_id, version_id):
+    output_path = Path('storage/' + str(model_id) + '/' + str(version_id) + '.onnx')
+    onnx_file = None
+    try:
+        with open(output_path, 'r+') as f:
+            onnx_file = f.name
+    except:
+        pass
+    return onnx_file
 
         
 
