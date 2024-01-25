@@ -7,9 +7,11 @@ class FairmodelSerializer(serializers.ModelSerializer):
         fields = '__all__'
         
 class FairmodelVersionSerializer(serializers.ModelSerializer):
+    metadata_id = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     class Meta:
         model = FairmodelVersion
-        fields = ('id', 'fairmodel', 'version', 'update_description', 'created_at')
+        fields = '__all__'
+        
 
 class NewModelVersionData(serializers.Serializer):
     update_type = serializers.ChoiceField(choices=['major', 'minor', 'patch'])
