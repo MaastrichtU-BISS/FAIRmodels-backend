@@ -14,7 +14,8 @@ def index(req):
 @api_view(['GET', 'POST'])
 def models_view(req):
     if req.method == 'GET':
-        fairmodel = Fairmodel.objects.all()
+        owned = req.GET.get('owned', '') == 'true'
+        fairmodel = Fairmodel.objects.all() if not owned else Fairmodel.objects.filter(user=req.user.id)
         serialized = FairmodelSerializer(fairmodel, many=True)
         return Response({'fairmodels': serialized.data})
     elif req.method == 'POST':
