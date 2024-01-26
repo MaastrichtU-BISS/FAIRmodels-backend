@@ -1,5 +1,6 @@
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+from django.http import FileResponse
 from rest_framework import status
 from .models import Fairmodel, FairmodelVersion
 from .serializers import FairmodelSerializer, FairmodelVersionSerializer
@@ -135,7 +136,7 @@ def modelversion_view(req, model_id, version_id):
         serialized_version = FairmodelVersionSerializer(fairmodel_version, data={'metadata_id': req.data['metadata_id']}, partial=True)
         if serialized_version.is_valid():
             serialized_version.save()
-            return Response({'message': 'Updated successfully', 'version': serialized_version.data})
+            return Response({'message': 'Update succeded', 'version': serialized_version.data})
         else:
             return Response({'message': 'Failed to update model', 'detail': serialized_version.errors}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -144,8 +145,8 @@ def modelversion_view(req, model_id, version_id):
     #     return Response({'message': 'Deleted successfully'})
 
 # /model/model_id/version/version_id/upload_onnx
-@api_view(['POST'])
-def upload_onnx(req, model_id, version_id):
+@api_view(['GET', 'POST'])
+def onnx_view(req, model_id, version_id):
     try:
         fairmodel = Fairmodel.objects.get(pk=model_id)
         fairmodel_version = FairmodelVersion.objects.get(pk=version_id)
@@ -155,11 +156,19 @@ def upload_onnx(req, model_id, version_id):
     if not req.user.is_authenticated or not req.user.id == fairmodel.user.id or not fairmodel_version.fairmodel.id == model_id:
         return Response(status=status.HTTP_401_UNAUTHORIZED)
 
+    if req.method == "GET":
+        onnx_path = Path('storage/' + str(fairmodel.id) + '/' + str(fairmodel_version.id) + '.onnx')
+        try:
+            f = open(onnx_path, 'rb')
+            return FileResponse(f)
+        except:
+            return Response({'message': 'No onnx file has been uploaded'}, status=status.HTTP_400_BAD_REQUEST)
+            
     if req.method == "POST":
         output_path = Path('storage/' + str(fairmodel.id) + '/' + str(fairmodel_version.id) + '.onnx')
         try:
             f = open(output_path, 'r')
-            return Response({'message': 'This version already has a model'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'message': 'This version already has an onnx file'}, status=status.HTTP_400_BAD_REQUEST)
         except:
             uploaded_file = req.data['file']
             output_path.parent.mkdir(exist_ok=True, parents=True)

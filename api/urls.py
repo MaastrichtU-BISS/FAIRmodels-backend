@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import index, model_view, models_view, modelversions_view, modelversion_view, upload_onnx
+from .views import index, model_view, models_view, modelversions_view, modelversion_view, onnx_view
 
 urlpatterns = [
     path('', index),
@@ -7,5 +7,5 @@ urlpatterns = [
     path('model/<uuid:model_id>', model_view),
     path('model/<uuid:model_id>/version', modelversions_view),
     path('model/<uuid:model_id>/version/<uuid:version_id>', modelversion_view),
-    path('model/<uuid:model_id>/version/<uuid:version_id>/upload_onnx', upload_onnx),
+    path('model/<uuid:model_id>/version/<uuid:version_id>/onnx', onnx_view),
 ]
