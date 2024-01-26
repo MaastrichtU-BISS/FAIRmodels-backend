@@ -16,7 +16,7 @@ def index(req):
 def models_view(req):
     if req.method == 'GET':
         owned = req.GET.get('owned', '') == 'true'
-        fairmodel = Fairmodel.objects.all() if not owned else Fairmodel.objects.filter(user=req.user.id)
+        fairmodel = Fairmodel.objects.all().order_by('-created_at') if not owned else Fairmodel.objects.filter(user=req.user.id).order_by('-created_at')
         serialized = FairmodelSerializer(fairmodel, many=True)
         return Response({'fairmodels': serialized.data})
     elif req.method == 'POST':
