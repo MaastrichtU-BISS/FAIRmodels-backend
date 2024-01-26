@@ -71,7 +71,7 @@ def modelversions_view(req, model_id):
             return Response(status=status.HTTP_401_UNAUTHORIZED)
 
     if req.method == 'GET':
-        fairmodel_versions = FairmodelVersion.objects.filter(fairmodel=fairmodel).all()
+        fairmodel_versions = FairmodelVersion.objects.filter(fairmodel=fairmodel).all().order_by('-created_at')
         serialized = FairmodelVersionSerializer(fairmodel_versions, many=True)
         return Response({'fairmodelversions': map(lambda x: {'version': x, 'onnx_file': get_onnx_model(fairmodel.id, x['id'])}, serialized.data)})
     
