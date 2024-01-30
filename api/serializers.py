@@ -8,6 +8,7 @@ class FairmodelSerializer(serializers.ModelSerializer):
         
 class FairmodelVersionSerializer(serializers.ModelSerializer):
     metadata_id = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    has_model = serializers.ReadOnlyField()
     class Meta:
         model = FairmodelVersion
         fields = '__all__'
