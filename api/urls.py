@@ -1,11 +1,11 @@
 from django.urls import path
-from .views import index, model_view, models_view, modelversions_view, modelversion_view, onnx_view
+from .views import index, fairmodel_view, fairmodels_view, modelversions_view, modelversion_view, model_view
 
 urlpatterns = [
     path('', index),
-    path('model/', models_view),
-    path('model/<uuid:model_id>', model_view),
-    path('model/<uuid:model_id>/version', modelversions_view),
-    path('model/<uuid:model_id>/version/<uuid:version_id>', modelversion_view),
-    path('model/<uuid:model_id>/version/<uuid:version_id>/onnx', onnx_view),
+    path('fairmodel/', fairmodels_view),
+    path('fairmodel/<uuid:model_id>', fairmodel_view),
+    path('fairmodel/<uuid:model_id>/version', modelversions_view),
+    path('fairmodel/<uuid:model_id>/version/<uuid:version_id>', modelversion_view),
+    path('fairmodel/<uuid:model_id>/version/<uuid:version_id>/model', model_view),
 ]

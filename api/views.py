@@ -5,7 +5,6 @@ from rest_framework import status
 from .models import Fairmodel, FairmodelVersion
 from .serializers import FairmodelSerializer, FairmodelVersionSerializer
 from pathlib import Path
-from os.path import isfile
 
 # /
 @api_view(['GET'])
@@ -14,7 +13,7 @@ def index(req):
 
 # /model
 @api_view(['GET', 'POST'])
-def models_view(req):
+def fairmodels_view(req):
     if req.method == 'GET':
         owned = req.GET.get('owned', '') == 'true'
         fairmodel = Fairmodel.objects.all().order_by('-created_at') if not owned else Fairmodel.objects.filter(user=req.user.id).order_by('-created_at')
@@ -34,7 +33,7 @@ def models_view(req):
 
 # /model/model_id
 @api_view(['GET', 'PUT', 'DELETE'])
-def model_view(req, model_id):
+def fairmodel_view(req, model_id):
     try:
         fairmodel = Fairmodel.objects.get(pk=model_id)
     except Fairmodel.DoesNotExist:
@@ -142,7 +141,7 @@ def modelversion_view(req, model_id, version_id):
 
 # /model/model_id/version/version_id/onnx
 @api_view(['GET', 'POST'])
-def onnx_view(req, model_id, version_id):
+def model_view(req, model_id, version_id):
     try:
         fairmodel = Fairmodel.objects.get(pk=model_id)
         fairmodel_version = FairmodelVersion.objects.get(pk=version_id)
@@ -165,8 +164,14 @@ def onnx_view(req, model_id, version_id):
         if fairmodel_version.has_model:
             return Response({'message': 'This version already has a model'}, status=status.HTTP_400_BAD_REQUEST)
         else:
-            uploaded_file = req.data['file']
-            output_path.parent.mkdir(exist_ok=True, parents=True)
-            for c in uploaded_file.chunks():
-                output_path.write_bytes(c)
-            return Response({'message': 'Uploaded successfully'}, status.HTTP_201_CREATED)
+            serialized_version = FairmodelVersionSerializer(fairmodel_version, data={'model_type': req.data['model_type']}, partial=True)
+            if serialized_version.is_valid():
+                serialized_version.save()
+
+                uploaded_file = req.data['file']
+                output_path.parent.mkdir(exist_ok=True, parents=True)
+                for c in uploaded_file.chunks():
+                    output_path.write_bytes(c)
+                return Response({'message': 'Uploaded successfully'}, status.HTTP_201_CREATED)
+            else:
+                return Response({'message': 'Failed to update model', 'detail': serialized_version.errors}, status=status.HTTP_400_BAD_REQUEST)
