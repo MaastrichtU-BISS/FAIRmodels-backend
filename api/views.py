@@ -1,3 +1,5 @@
+import os
+import requests
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from django.http import FileResponse
@@ -5,11 +7,27 @@ from rest_framework import status
 from .models import Fairmodel, FairmodelVersion
 from .serializers import FairmodelSerializer, FairmodelVersionSerializer
 from pathlib import Path
+from .services import MetadataCenterAPIService
+from django.conf import settings
 
 # /
 @api_view(['GET'])
 def index(req):
     return Response({"Hello": "World"})
+
+# /cedar_instances
+@api_view(['GET'])
+def cedar_instances(req):
+    try:
+        mc_service = MetadataCenterAPIService()
+        page = req.GET.get('page', '1')
+        if not page.isnumeric():
+            return Response({'message': 'Page parameter is invalid'}, status=status.HTTP_400_BAD_REQUEST)
+        page = int(page)
+        response = mc_service.get_instances(settings.METADATACENTER_INSTANCES_FOLDER_ID, page)
+        return Response({'instances': response['resources']})
+    except requests.RequestException as e:
+        return Response({'message': 'An error occured when attempting to retrieve the instances from CEDAR'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 # /model
 @api_view(['GET', 'POST'])
@@ -100,7 +118,7 @@ def modelversions_view(req, model_id):
         req.data['version'] = new_version
         req.data['fairmodel'] = fairmodel.id
         del req.data['update_type']
-        serialized = FairmodelVersionSerializer(data=req.data, context={ 'request': req})
+        serialized = FairmodelVersionSerializer(data=req.data, context={'request': req})
         if serialized.is_valid():
             serialized.save()
             return Response({'message': "Successfully created", 'version': serialized.data})
@@ -132,14 +150,49 @@ def modelversion_view(req, model_id, version_id):
         if not req.data['metadata_id']:
             return Response({'message': 'Expected parameter: only "metadata_id"'}, status=status.HTTP_400_BAD_REQUEST)
 
-        serialized_version = FairmodelVersionSerializer(fairmodel_version, data={'metadata_id': req.data['metadata_id']}, partial=True)
+        # todo: fetch instance metadata and store
+        try:
+            mc_service = MetadataCenterAPIService()
+            instance_metadata = mc_service.get_instance(req.data['metadata_id'])
+        except requests.HTTPError as e:
+            json = e.response.json()
+            if json['message'] and json['message'] == 'You do not have read access to the artifact':
+                return Response({'message': 'Could not find the given resource'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'message': 'An error occured when attempting to retrieve the resource.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        if '@id' not in instance_metadata :
+            return Response({'message': 'The given instance could not be parsed.'})
+        
+        serialized_version = FairmodelVersionSerializer(fairmodel_version, data={
+            'metadata_id': req.data['metadata_id'],
+            'metadata_json': instance_metadata
+        }, partial=True)
+
         if serialized_version.is_valid():
             serialized_version.save()
             return Response({'message': 'Update succeded', 'version': serialized_version.data})
         else:
             return Response({'message': 'Failed to update model', 'detail': serialized_version.errors}, status=status.HTTP_400_BAD_REQUEST)
 
-# /model/model_id/version/version_id/onnx
+# /model/model_id/version/version_id/link
+@api_view(['GET', 'PUT'])
+def link_view(req, model_id, version_id):
+    try:
+        fairmodel = Fairmodel.objects.get(pk=model_id)
+        fairmodel_version = FairmodelVersion.objects.get(pk=version_id)
+    except Fairmodel.DoesNotExist or FairmodelVersion.DoesNotExist:
+        return Response({'message': 'The given ID was not found in the database'}, status=status.HTTP_404_NOT_FOUND)
+
+    if not req.user.is_authenticated or not req.user.id == fairmodel.user.id or not fairmodel_version.fairmodel.id == model_id:
+        return Response(status=status.HTTP_401_UNAUTHORIZED)
+
+    if req.method == "GET":
+        return Response({'message': 'Not implemented yet'}, status=status.HTTP_400_BAD_REQUEST)
+    
+    if req.method == "PUT":
+        return Response({'message': 'Not implemented yet'}, status=status.HTTP_400_BAD_REQUEST)
+
+# /model/model_id/version/version_id/model
 @api_view(['GET', 'POST'])
 def model_view(req, model_id, version_id):
     try:

@@ -198,3 +198,8 @@ AUTHENTICATION_BACKENDS = (
  # `allauth` specific authentication methods, such as login by e-mail
  "allauth.account.auth_backends.AuthenticationBackend",
 )
+
+# Metadatacendar Config Options
+
+METADATACENTER_INSTANCES_FOLDER_ID = 'd12cdea4-8537-4f0c-af26-c5b29cc07d1b'
+METADATACENTER_TEMPLATE_ID = ''
