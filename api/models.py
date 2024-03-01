@@ -32,7 +32,7 @@ class FairmodelVersion(models.Model):
         output_path = Path('storage/' + str(self.fairmodel.id) + '/' + str(self.id))
         return isfile(output_path)
 
-class FeatureLink(models.Model):
+class VariableLink(models.Model):
     
     class LinkType(models.TextChoices):
         INPUT = 'INPUT'
