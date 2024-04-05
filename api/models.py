@@ -27,22 +27,27 @@ class FairmodelVersion(models.Model):
     model_type = models.CharField(choices=ModelType.choices, default=ModelType.DEFAULT, max_length=64)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    metadata_input_variables = models.JSONField(null=True)
+    metadata_output_variables = models.JSONField(null=True)
+    model_input_variables = models.JSONField(null=True)
+    model_output_variables = models.JSONField(null=True)
+
     @property
     def has_model(self):
         output_path = Path('storage/' + str(self.fairmodel.id) + '/' + str(self.id))
         return isfile(output_path)
 
 class VariableLink(models.Model):
-    
-    class LinkType(models.TextChoices):
+
+    class VariableType(models.TextChoices):
         INPUT = 'INPUT'
         OUTPUT = 'OUTPUT'
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     fairmodel_version = models.ForeignKey(FairmodelVersion, on_delete=models.CASCADE)
-    link_type = models.CharField(choices=LinkType.choices, default=LinkType.INPUT, max_length=64)
+    variable_type = models.CharField(choices=VariableType.choices, default=VariableType.INPUT, max_length=64)
 
     # reference to field in metadata (to index in list Input/Outcome)
-    field_metadata = models.IntegerField()
+    field_metadata = models.CharField(max_length=255)
     # reference to field in pmml/onnx representation
     field_model = models.CharField(max_length=255)

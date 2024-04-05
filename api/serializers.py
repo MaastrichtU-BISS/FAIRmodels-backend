@@ -9,6 +9,13 @@ class FairmodelSerializer(serializers.ModelSerializer):
 class FairmodelVersionSerializer(serializers.ModelSerializer):
     metadata_id = serializers.CharField(required=False, allow_null=True)
     metadata_json = serializers.JSONField(required=False, allow_null=True)
+
+    metadata_input_variables = serializers.JSONField(required=False, allow_null=True)
+    metadata_output_variables = serializers.JSONField(required=False, allow_null=True)
+    
+    model_input_variables = serializers.JSONField(required=False, allow_null=True)
+    model_output_variables = serializers.JSONField(required=False, allow_null=True)
+    
     has_model = serializers.ReadOnlyField()
     class Meta:
         model = FairmodelVersion

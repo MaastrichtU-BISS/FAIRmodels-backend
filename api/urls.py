@@ -7,7 +7,8 @@ from .views import \
     modelversions_view, \
     modelversion_view, \
     link_view, \
-    model_view
+    model_view, \
+    variables_view
 
 urlpatterns = [
     path('', index),
@@ -18,4 +19,5 @@ urlpatterns = [
     path('fairmodel/<uuid:model_id>/version/<uuid:version_id>', modelversion_view),
     path('fairmodel/<uuid:model_id>/version/<uuid:version_id>/link', link_view),
     path('fairmodel/<uuid:model_id>/version/<uuid:version_id>/model', model_view),
+    path('fairmodel/<uuid:model_id>/version/<uuid:version_id>/variables', variables_view)
 ]

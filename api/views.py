@@ -9,6 +9,7 @@ from .serializers import FairmodelSerializer, FairmodelVersionSerializer
 from pathlib import Path
 from .services import MetadataCenterAPIService
 from django.conf import settings
+import traceback
 
 # /
 @api_view(['GET'])
@@ -163,9 +164,27 @@ def modelversion_view(req, model_id, version_id):
         if '@id' not in instance_metadata :
             return Response({'message': 'The given instance could not be parsed.'})
         
+        def map_mdc_vars(row):
+            return {'id': row['@id'], 'name': row['rdfs:label']}
+        
+        # TODO: write generic class that infers variables from ONNX or in future PMML models
+
+        metadata_input_variables = list(map(map_mdc_vars, instance_metadata['Input']))
+        metadata_output_variables = map_mdc_vars(instance_metadata['Outcome'])
+        if isinstance(metadata_output_variables, object):
+            metadata_output_variables = [metadata_output_variables]
+        
+        if len(metadata_input_variables) < 1:
+            return Response({'message': 'Instance must contain atleast one input variable'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if len(metadata_output_variables) < 1:
+            return Response({'message': 'Instance must contain atleast one output variable'}, status=status.HTTP_400_BAD_REQUEST)
+
         serialized_version = FairmodelVersionSerializer(fairmodel_version, data={
             'metadata_id': req.data['metadata_id'],
-            'metadata_json': instance_metadata
+            'metadata_json': instance_metadata,
+            'metadata_input_variables': metadata_input_variables,
+            'metadata_output_variables': metadata_output_variables,
         }, partial=True)
 
         if serialized_version.is_valid():
@@ -174,9 +193,9 @@ def modelversion_view(req, model_id, version_id):
         else:
             return Response({'message': 'Failed to update model', 'detail': serialized_version.errors}, status=status.HTTP_400_BAD_REQUEST)
 
-# /model/model_id/version/version_id/link
-@api_view(['GET', 'PUT'])
-def link_view(req, model_id, version_id):
+# /model/model_id/version/version_id/variables
+@api_view(['GET'])
+def variables_view(req, model_id, version_id):
     try:
         fairmodel = Fairmodel.objects.get(pk=model_id)
         fairmodel_version = FairmodelVersion.objects.get(pk=version_id)
@@ -186,11 +205,52 @@ def link_view(req, model_id, version_id):
     if not req.user.is_authenticated or not req.user.id == fairmodel.user.id or not fairmodel_version.fairmodel.id == model_id:
         return Response(status=status.HTTP_401_UNAUTHORIZED)
 
-    if req.method == "GET":
-        return Response({'message': 'Not implemented yet'}, status=status.HTTP_400_BAD_REQUEST)
+    if not fairmodel_version.metadata_input_variables or not fairmodel_version.metadata_output_variables:
+        return Response({'message': 'This version has no metadata connected to it yet'}, status=status.HTTP_400_BAD_REQUEST)
     
-    if req.method == "PUT":
-        return Response({'message': 'Not implemented yet'}, status=status.HTTP_400_BAD_REQUEST)
+    if not fairmodel_version.model_input_variables or not fairmodel_version.model_output_variables:
+        return Response({'message': 'This version has no model connected to it yet'}, status=status.HTTP_400_BAD_REQUEST)
+
+    vars = {
+        'input': {
+            'metadata': fairmodel_version.metadata_input_variables,
+            'model': fairmodel_version.model_input_variables
+        },
+        'output': {
+            'metadata': fairmodel_version.metadata_output_variables,
+            'model': fairmodel_version.model_output_variables
+        },
+    }
+    
+    return Response({'variables': vars}, status=status.HTTP_400_BAD_REQUEST)
+
+def get_variables_from_model(path: str, type: str):
+    if type == 'PMML':
+        raise Exception('Parsing of PMML-models is not yet supported.')
+    elif type == 'ONNX':
+        import onnx
+        from google.protobuf.json_format import MessageToDict
+
+        print('READING PATH:', path)
+        try:
+            onnx_model = onnx.load(path)
+        except Exception as e:
+            raise Exception("Unable to parse variables from ONNX-model")
+        
+        def map_onnx_vars(var):
+            return {
+                'name': var.name,
+                'type': MessageToDict(var.type)
+            }
+
+        variables = {
+            'inputs': list(map(map_onnx_vars, onnx_model.graph.input)),
+            'outputs': list(map(map_onnx_vars, onnx_model.graph.output)),
+        }
+
+        return variables
+    else:
+        raise Exception("Unrecognized model-type")
 
 # /model/model_id/version/version_id/model
 @api_view(['GET', 'POST'])
@@ -225,6 +285,44 @@ def model_view(req, model_id, version_id):
                 output_path.parent.mkdir(exist_ok=True, parents=True)
                 for c in uploaded_file.chunks():
                     output_path.write_bytes(c)
+
+                try:
+                    variables_model = get_variables_from_model(output_path, req.data['model_type'])
+                except Exception as e:
+                    output_path.unlink()
+                    return Response({'message': 'Error parsing the variables from the model: ' + getattr(e, 'message', str(e))}, status.HTTP_500_INTERNAL_SERVER_ERROR)
+                
+                update_vars_serializer = FairmodelVersionSerializer(fairmodel_version, data={
+                    'model_input_variables': variables_model['inputs'],
+                    'model_output_variables': variables_model['outputs']
+                }, partial=True)
+
+                if update_vars_serializer.is_valid():
+                    update_vars_serializer.save()
+                else:
+                    print("ERROR ON SAVE:")
+                    print(update_vars_serializer.errors)
+                    print(variables_model['inputs'])
+                    Response({'message': 'Failed to store model variables', 'detail': update_vars_serializer.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR) 
+                
                 return Response({'message': 'Uploaded successfully'}, status.HTTP_201_CREATED)
             else:
                 return Response({'message': 'Failed to update model', 'detail': serialized_version.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+# /model/model_id/version/version_id/link
+@api_view(['GET', 'PUT'])
+def link_view(req, model_id, version_id):
+    try:
+        fairmodel = Fairmodel.objects.get(pk=model_id)
+        fairmodel_version = FairmodelVersion.objects.get(pk=version_id)
+    except Fairmodel.DoesNotExist or FairmodelVersion.DoesNotExist:
+        return Response({'message': 'The given ID was not found in the database'}, status=status.HTTP_404_NOT_FOUND)
+
+    if not req.user.is_authenticated or not req.user.id == fairmodel.user.id or not fairmodel_version.fairmodel.id == model_id:
+        return Response(status=status.HTTP_401_UNAUTHORIZED)
+
+    if req.method == "GET":
+        return Response({'message': 'Not implemented yet'}, status=status.HTTP_400_BAD_REQUEST)
+    
+    if req.method == "PUT":
+        return Response({'message': 'Not implemented yet'}, status=status.HTTP_400_BAD_REQUEST)

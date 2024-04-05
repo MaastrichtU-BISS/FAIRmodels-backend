@@ -206,3 +206,5 @@ AUTHENTICATION_BACKENDS = (
 
 METADATACENTER_INSTANCES_FOLDER_ID = 'd12cdea4-8537-4f0c-af26-c5b29cc07d1b'
 METADATACENTER_TEMPLATE_ID = ''
+METADATACENTER_FIELD_INPUT_ID = 'https://schema.metadatacenter.org/properties/6b6846ba-4e4f-44d4-8349-12147de2cda5',
+METADATACENTER_FIELD_OUTPUT_ID = 'https://schema.metadatacenter.org/properties/daed2a8a-bc5d-447a-bfbf-7a52f3a34974'
