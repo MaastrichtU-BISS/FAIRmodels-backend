@@ -222,7 +222,7 @@ def variables_view(req, model_id, version_id):
         },
     }
     
-    return Response({'variables': vars}, status=status.HTTP_400_BAD_REQUEST)
+    return Response({'variables': vars})
 
 def get_variables_from_model(path: str, type: str):
     if type == 'PMML':
