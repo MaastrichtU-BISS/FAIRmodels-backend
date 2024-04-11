@@ -217,7 +217,7 @@ AUTHENTICATION_BACKENDS = (
 
 # Metadatacendar Config Options
 
-METADATACENTER_INSTANCES_FOLDER_ID = 'd12cdea4-8537-4f0c-af26-c5b29cc07d1b'
+METADATACENTER_INSTANCES_FOLDER_ID = '6ce6f9ff-a9ff-49a0-987a-88d3c9b639ff'
 METADATACENTER_TEMPLATE_ID = ''
 METADATACENTER_FIELD_INPUT_ID = 'https://schema.metadatacenter.org/properties/6b6846ba-4e4f-44d4-8349-12147de2cda5',
-METADATACENTER_FIELD_OUTPUT_ID = 'https://schema.metadatacenter.org/properties/daed2a8a-bc5d-447a-bfbf-7a52f3a34974'
+METADATACENTER_FIELD_OUTPUT_ID = 'https://schema.metadatacenter.org/properties/9cb9445b-3f63-48d3-8989-e2444e2b9a45'
