@@ -29,7 +29,10 @@ SECRET_KEY = str(os.getenv('SECRET_KEY', 'django-insecure-1234'))
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    'localhost',
+    'api.fairmodels.org'
+]
 
 
 # Application definition
@@ -170,6 +173,16 @@ REST_AUTH = {
 
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:9000',
+    'https://*.fairmodels.org'
+]
+CSRF_TRUSTED_ORIGINS = [
+    'https://api.fairmodels.org'
+],
+ALLOWED_HOSTS = [
+    'api.fairmodels.org',
+],
+CORS_ORIGIN_WHITELIST = [
+    'https://api.fairmodels.org',
 ]
 
 # allauth configuration
