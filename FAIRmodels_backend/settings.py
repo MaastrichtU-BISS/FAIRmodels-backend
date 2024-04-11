@@ -34,6 +34,7 @@ ALLOWED_HOSTS = [
     'api.fairmodels.org'
 ]
 
+CORS_ORIGIN_ALLOW_ALL = True
 
 # Application definition
 
@@ -66,18 +67,17 @@ INSTALLED_APPS = [
 SITE_ID = 1
 
 MIDDLEWARE = [
+    "corsheaders.middleware.CorsMiddleware",
+    'django.middleware.common.CommonMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
+    
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 
     "allauth.account.middleware.AccountMiddleware",
-
-    "corsheaders.middleware.CorsMiddleware",
-    "django.middleware.common.CommonMiddleware",
 ]
 
 ROOT_URLCONF = 'FAIRmodels_backend.urls'
@@ -176,13 +176,18 @@ CORS_ALLOWED_ORIGINS = [
     'https://*.fairmodels.org'
 ]
 CSRF_TRUSTED_ORIGINS = [
-    'https://api.fairmodels.org'
-],
+    'https://*.fairmodels.org'
+]
 ALLOWED_HOSTS = [
+    'localhost',
+    '127.0.0.1',
     'api.fairmodels.org',
-],
+]
 CORS_ORIGIN_WHITELIST = [
     'https://api.fairmodels.org',
+    'https://models.fairmodels.org',
+    'http://localhost:8000',
+    'http://localhost:9000'
 ]
 
 # allauth configuration
