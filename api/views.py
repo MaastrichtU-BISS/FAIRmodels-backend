@@ -4,8 +4,8 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from django.http import FileResponse
 from rest_framework import status
-from .models import Fairmodel, FairmodelVersion
-from .serializers import FairmodelSerializer, FairmodelVersionSerializer
+from .models import Fairmodel, FairmodelVersion, VariableLink
+from .serializers import FairmodelSerializer, FairmodelVersionSerializer, VariableLinkSerializer
 from pathlib import Path
 from .services import MetadataCenterAPIService
 from django.conf import settings
@@ -194,7 +194,7 @@ def modelversion_view(req, model_id, version_id):
             return Response({'message': 'Failed to update model', 'detail': serialized_version.errors}, status=status.HTTP_400_BAD_REQUEST)
 
 # /model/model_id/version/version_id/variables
-@api_view(['GET'])
+@api_view(['GET', 'PUT'])
 def variables_view(req, model_id, version_id):
     try:
         fairmodel = Fairmodel.objects.get(pk=model_id)
@@ -211,18 +211,83 @@ def variables_view(req, model_id, version_id):
     if not fairmodel_version.model_input_variables or not fairmodel_version.model_output_variables:
         return Response({'message': 'This version has no model connected to it yet'}, status=status.HTTP_400_BAD_REQUEST)
 
-    vars = {
-        'input': {
-            'metadata': fairmodel_version.metadata_input_variables,
-            'model': fairmodel_version.model_input_variables
-        },
-        'output': {
-            'metadata': fairmodel_version.metadata_output_variables,
-            'model': fairmodel_version.model_output_variables
-        },
-    }
+    related_links_db = VariableLink.objects.filter(fairmodel_version=fairmodel_version).all()
     
-    return Response({'variables': vars}, status=status.HTTP_400_BAD_REQUEST)
+
+    def assign_links(metadata_variable):
+        current_link = related_links_db.filter(field_metadata_var_id=metadata_variable["id"]).first()
+        encoded_link = None
+        if current_link:
+            encoded_link = {
+                "name": current_link.field_model_var_name,
+                "linked_dim_index": current_link.field_model_var_dim_index,
+                "linked_dim_start": current_link.field_model_var_dim_start,
+                "linked_dim_end": current_link.field_model_var_dim_end,
+            }
+        
+        return {
+            "id": metadata_variable["id"],
+            "name": metadata_variable["name"],
+            "linked_model_var": encoded_link
+        }
+    
+    if req.method == "GET":
+
+        vars = {
+            'input': {
+                'metadata': map(assign_links, fairmodel_version.metadata_input_variables),
+                'model': fairmodel_version.model_input_variables
+            },
+            'output': {
+                'metadata': map(assign_links, fairmodel_version.metadata_output_variables),
+                'model': fairmodel_version.model_output_variables
+            },
+        }
+        
+        return Response({'variables': vars})
+    
+    elif req.method == "PUT":
+
+        VariableLink.objects.filter(fairmodel_version_id=version_id).delete()
+        
+        for direction in ["input", "output"]:
+            for item in req.data["links"][direction]:
+
+                link_data = {
+                    "fairmodel_version": version_id,
+                    "variable_type": direction.upper(),
+                    "field_metadata_var_id": item["metadata_id"],
+                    "field_model_var_name": item["link"]["name"],
+                    "field_model_var_dim_index": item["link"]["linked_dim_index"],
+                    "field_model_var_dim_start": item["link"]["linked_dim_start"],
+                    "field_model_var_dim_end": item["link"]["linked_dim_end"],
+                }
+
+                serialized = VariableLinkSerializer(data=link_data, context={'request': req})
+
+                if serialized.is_valid():
+                    serialized.save()
+                else:
+                    print("failed saving link:", serialized.errors)
+
+        ## some logic
+
+        fairmodel_version = FairmodelVersion.objects.get(pk=version_id)
+    
+        vars = {
+            'input': {
+                'metadata': map(assign_links, fairmodel_version.metadata_input_variables),
+                'model': fairmodel_version.model_input_variables
+            },
+            'output': {
+                'metadata': map(assign_links, fairmodel_version.metadata_output_variables),
+                'model': fairmodel_version.model_output_variables
+            },
+        }
+
+        return Response({})
+
+    return Response({}, status=status.HTTP_400_BAD_REQUEST)
 
 def get_variables_from_model(path: str, type: str):
     if type == 'PMML':
@@ -309,20 +374,17 @@ def model_view(req, model_id, version_id):
             else:
                 return Response({'message': 'Failed to update model', 'detail': serialized_version.errors}, status=status.HTTP_400_BAD_REQUEST)
 
-# /model/model_id/version/version_id/link
-@api_view(['GET', 'PUT'])
-def link_view(req, model_id, version_id):
-    try:
-        fairmodel = Fairmodel.objects.get(pk=model_id)
-        fairmodel_version = FairmodelVersion.objects.get(pk=version_id)
-    except Fairmodel.DoesNotExist or FairmodelVersion.DoesNotExist:
-        return Response({'message': 'The given ID was not found in the database'}, status=status.HTTP_404_NOT_FOUND)
+# # /model/model_id/version/version_id/link
+# @api_view(['GET', 'PUT'])
+# def link_view(req, model_id, version_id):
+#     try:
+#         fairmodel = Fairmodel.objects.get(pk=model_id)
+#         fairmodel_version = FairmodelVersion.objects.get(pk=version_id)
+#     except Fairmodel.DoesNotExist or FairmodelVersion.DoesNotExist:
+#         return Response({'message': 'The given ID was not found in the database'}, status=status.HTTP_404_NOT_FOUND)
 
-    if not req.user.is_authenticated or not req.user.id == fairmodel.user.id or not fairmodel_version.fairmodel.id == model_id:
-        return Response(status=status.HTTP_401_UNAUTHORIZED)
+#     if not req.user.is_authenticated or not req.user.id == fairmodel.user.id or not fairmodel_version.fairmodel.id == model_id:
+#         return Response(status=status.HTTP_401_UNAUTHORIZED)
 
-    if req.method == "GET":
-        return Response({'message': 'Not implemented yet'}, status=status.HTTP_400_BAD_REQUEST)
-    
-    if req.method == "PUT":
-        return Response({'message': 'Not implemented yet'}, status=status.HTTP_400_BAD_REQUEST)
+#     if req.method == "PUT":
+#         return Response({'message': 'Not implemented yet'}, status=status.HTTP_400_BAD_REQUEST)

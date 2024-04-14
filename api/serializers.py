@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Fairmodel, FairmodelVersion
+from .models import Fairmodel, FairmodelVersion, VariableLink
 
 class FairmodelSerializer(serializers.ModelSerializer):
     class Meta:
@@ -20,6 +20,23 @@ class FairmodelVersionSerializer(serializers.ModelSerializer):
     class Meta:
         model = FairmodelVersion
         fields = '__all__'
+
+
+class VariableLinkSerializer(serializers.ModelSerializer):
+
+    # fairmodel_version = serializers.ForeignKey(FairmodelVersion, on_delete=models.CASCADE)
+    variable_type = serializers.ChoiceField(choices=['INPUT', 'OUTPUT'])
+
+    field_metadata_var_id = serializers.CharField(max_length=255)
+    field_model_var_name = serializers.CharField(max_length=255)
+    field_model_var_dim_index = serializers.IntegerField()
+    field_model_var_dim_start = serializers.IntegerField()
+    field_model_var_dim_end = serializers.IntegerField()
+    
+    class Meta:
+        model = VariableLink
+        fields = '__all__'
+
 
 class NewModelVersionData(serializers.Serializer):
     update_type = serializers.ChoiceField(choices=['major', 'minor', 'patch'])
