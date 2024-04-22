@@ -43,11 +43,27 @@ class VariableLink(models.Model):
         INPUT = 'INPUT'
         OUTPUT = 'OUTPUT'
 
+    class Meta:    
+        constraints = [
+            models.UniqueConstraint(fields=[
+                'fairmodel_version_id',
+                'variable_type',
+                'field_metadata_var_id',
+                'field_model_var_name',
+                'field_model_var_dim_index',
+                'field_model_var_dim_start',
+                'field_model_var_dim_end'
+            ], name='unique appversion')
+        ]
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     fairmodel_version = models.ForeignKey(FairmodelVersion, on_delete=models.CASCADE)
     variable_type = models.CharField(choices=VariableType.choices, default=VariableType.INPUT, max_length=64)
 
     # reference to field in metadata (to index in list Input/Outcome)
-    field_metadata = models.CharField(max_length=255)
+    field_metadata_var_id = models.CharField(max_length=255)
     # reference to field in pmml/onnx representation
-    field_model = models.CharField(max_length=255)
+    field_model_var_name = models.CharField(max_length=255)
+    field_model_var_dim_index = models.IntegerField()
+    field_model_var_dim_start = models.IntegerField()
+    field_model_var_dim_end = models.IntegerField()
