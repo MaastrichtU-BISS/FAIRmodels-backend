@@ -14,7 +14,7 @@ ENV DJANGO_SUPERUSER_EMAIL="root@root.tld"
 
 RUN echo cd /backend > /run.sh
 RUN echo python manage.py migrate >> /run.sh
-RUN python manage.py createsuperuser --no-input >> /run.sh
+RUN echo python manage.py createsuperuser --no-input >> /run.sh
 RUN echo python manage.py runserver 0.0.0.0:8000 >> /run.sh
 
 WORKDIR /
