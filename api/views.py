@@ -334,7 +334,7 @@ def model_view(req, model_id, version_id):
     if req.method == "GET":
         if fairmodel_version.has_model:
             f = open(output_path, 'rb')
-            return FileResponse(f)
+            return FileResponse(f, as_attachment=True)
         else:
             return Response({'message': 'No model has been uploaded'}, status=status.HTTP_400_BAD_REQUEST)
             
