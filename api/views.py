@@ -10,6 +10,7 @@ from pathlib import Path
 from .services import MetadataCenterAPIService
 from django.conf import settings
 import traceback
+import io
 
 # /
 @api_view(['GET'])
@@ -220,10 +221,14 @@ def variables_view(req, model_id, version_id):
         if current_link:
             encoded_link = {
                 "name": current_link.field_model_var_name,
-                "linked_dim_index": current_link.field_model_var_dim_index,
-                "linked_dim_start": current_link.field_model_var_dim_start,
-                "linked_dim_end": current_link.field_model_var_dim_end,
             }
+
+            if current_link.field_model_var_dim_index is not None:
+                encoded_link['linked_dim_index'] = current_link.field_model_var_dim_index
+            if current_link.field_model_var_dim_start is not None:
+                encoded_link['linked_dim_start'] = current_link.field_model_var_dim_start
+            if current_link.field_model_var_dim_end is not None:
+                encoded_link['linked_dim_end'] = current_link.field_model_var_dim_end
         
         return {
             "id": metadata_variable["id"],
@@ -258,10 +263,19 @@ def variables_view(req, model_id, version_id):
                     "variable_type": direction.upper(),
                     "field_metadata_var_id": item["metadata_id"],
                     "field_model_var_name": item["link"]["name"],
-                    "field_model_var_dim_index": item["link"]["linked_dim_index"],
-                    "field_model_var_dim_start": item["link"]["linked_dim_start"],
-                    "field_model_var_dim_end": item["link"]["linked_dim_end"],
                 }
+
+                optional_fields = [
+                    ["field_model_var_dim_index", "linked_dim_index"],
+                    ["field_model_var_dim_start", "linked_dim_start"],
+                    ["field_model_var_dim_end", "linked_dim_end"]
+                ]
+
+                for [optional_field_map, optional_field_req] in optional_fields:
+                    if optional_field_req in item["link"]:
+                        link_data[optional_field_map] = item["link"][optional_field_req]
+                
+                print(link_data)
 
                 serialized = VariableLinkSerializer(data=link_data, context={'request': req})
 
@@ -269,8 +283,6 @@ def variables_view(req, model_id, version_id):
                     serialized.save()
                 else:
                     print("failed saving link:", serialized.errors)
-
-        ## some logic
 
         fairmodel_version = FairmodelVersion.objects.get(pk=version_id)
     
@@ -333,8 +345,11 @@ def model_view(req, model_id, version_id):
 
     if req.method == "GET":
         if fairmodel_version.has_model:
-            f = open(output_path, 'rb')
-            return FileResponse(f)
+            with open(output_path, 'rb') as f:
+                # return FileResponse(f)
+                buffer = io.BytesIO(f.read())
+                buffer.seek(0)
+                return FileResponse(buffer, as_attachment=True)
         else:
             return Response({'message': 'No model has been uploaded'}, status=status.HTTP_400_BAD_REQUEST)
             

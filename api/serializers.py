@@ -29,9 +29,9 @@ class VariableLinkSerializer(serializers.ModelSerializer):
 
     field_metadata_var_id = serializers.CharField(max_length=255)
     field_model_var_name = serializers.CharField(max_length=255)
-    field_model_var_dim_index = serializers.IntegerField()
-    field_model_var_dim_start = serializers.IntegerField()
-    field_model_var_dim_end = serializers.IntegerField()
+    field_model_var_dim_index = serializers.IntegerField(required=False)
+    field_model_var_dim_start = serializers.IntegerField(required=False)
+    field_model_var_dim_end = serializers.IntegerField(required=False)
     
     class Meta:
         model = VariableLink

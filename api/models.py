@@ -64,6 +64,6 @@ class VariableLink(models.Model):
     field_metadata_var_id = models.CharField(max_length=255)
     # reference to field in pmml/onnx representation
     field_model_var_name = models.CharField(max_length=255)
-    field_model_var_dim_index = models.IntegerField()
-    field_model_var_dim_start = models.IntegerField()
-    field_model_var_dim_end = models.IntegerField()
+    field_model_var_dim_index = models.IntegerField(null=True)
+    field_model_var_dim_start = models.IntegerField(null=True)
+    field_model_var_dim_end = models.IntegerField(null=True)
