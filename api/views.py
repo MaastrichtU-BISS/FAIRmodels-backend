@@ -10,7 +10,6 @@ from pathlib import Path
 from .services import MetadataCenterAPIService
 from django.conf import settings
 import traceback
-import io
 
 # /
 @api_view(['GET'])
@@ -345,11 +344,8 @@ def model_view(req, model_id, version_id):
 
     if req.method == "GET":
         if fairmodel_version.has_model:
-            with open(output_path, 'rb') as f:
-                # return FileResponse(f)
-                buffer = io.BytesIO(f.read())
-                buffer.seek(0)
-                return FileResponse(buffer, as_attachment=True)
+            f = open(output_path, 'rb')
+            return FileResponse(f, as_attachment=True)
         else:
             return Response({'message': 'No model has been uploaded'}, status=status.HTTP_400_BAD_REQUEST)
             
