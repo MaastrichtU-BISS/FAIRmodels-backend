@@ -1,4 +1,6 @@
 from django.urls import path
+from rest_framework.decorators import api_view, permission_classes, authentication_classes
+from rest_framework.permissions import AllowAny
 from .views import \
     index, \
     cedar_instances, \
@@ -10,7 +12,7 @@ from .views import \
     variables_view
 
 urlpatterns = [
-    path('', index),
+    path('', api_view(['GET'])(authentication_classes([])(permission_classes([AllowAny])(index)))),
     path('cedar_instances/', cedar_instances),
     path('fairmodel/', fairmodels_view),
     path('fairmodel/<uuid:model_id>', fairmodel_view),

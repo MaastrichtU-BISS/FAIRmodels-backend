@@ -12,9 +12,47 @@ from django.conf import settings
 import traceback
 
 # /
-@api_view(['GET'])
+# @api_view(['GET'])
 def index(req):
-    return Response({"Hello": "World"})
+    returnData = [ ]
+    models = Fairmodel.objects.all()
+    for model in models:
+        modelData ={
+            'id': model.id,
+            'name': model.name,
+            'description': model.description,
+            'created_at': model.created_at,
+            'user': model.user.email,
+            'versions': [ ]
+        }
+        versions = FairmodelVersion.objects.filter(fairmodel=model).all()
+        for version in versions:
+            versionData = {
+                'id': version.id,
+                'version': version.version,
+                'metadata_id': 'https://repo.metadatacenter.org/template-instances/' + version.metadata_id,
+                # 'metadata_cedar': version.metadata_json,
+                'metadata_input_variables': version.metadata_input_variables,
+                'metadata_output_variables': version.metadata_output_variables,
+                'model_type': version.model_type,
+                'model_input_variables': version.model_input_variables,
+                'model_output_variables': version.model_output_variables,
+                'created_at': version.created_at,
+                'input_output_links': []
+            }
+            links = VariableLink.objects.filter(fairmodel_version=version).all()
+            for link in links:
+                versionData['input_output_links'].append({
+                    'metadata_id': link.field_metadata_var_id,
+                    'var_name': link.field_model_var_name,
+                    'var_dim_index': link.field_model_var_dim_index,
+                    'var_dim_start': link.field_model_var_dim_start,
+                    'var_dim_end': link.field_model_var_dim_end
+                })
+
+            modelData['versions'].append(versionData)
+        returnData.append(modelData)
+    return Response(returnData)
 
 # /cedar_instances
 @api_view(['GET'])
