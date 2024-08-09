@@ -3,7 +3,7 @@ from django.http import HttpResponse
 import logging
 from rdflib import Graph, URIRef
 
-from api.models import Fairmodel, FairmodelVersion
+from api.models import Fairmodel, FairmodelVersion, VariableLink
 from executor.services import JSONLDParser
 
 # Create your views here.
@@ -27,3 +27,28 @@ def index(request):
         })
     logging.debug(return_value)
     return render(request, 'index.html', context={'models': return_value})
+
+def executor(request, model_id):
+    """
+    Render the executor page for a given model.
+    """
+    model_version = FairmodelVersion.objects.get(id=model_id)
+    parser = JSONLDParser(json_ld_object=model_version.metadata_json)
+    logging.debug("==================================")
+    logging.debug(model_version.metadata_input_variables)
+    
+    if request.method == 'GET':
+        return render(request, 'executor.html', context={'model_version': model_version, 'title': parser.get_value(predicate="http://purl.org/dc/terms/title")})
+    elif request.method == 'POST':
+        entered_values = request.POST.dict()
+        logging.debug("Entered values: ")
+        logging.debug(entered_values)
+
+        variable_links = VariableLink.objects.filter(fairmodel_version=model_version).order_by("field_model_var_dim_start").all()
+        input_numbers = [ ]
+        for variable_link in variable_links:
+            logging.debug(str(variable_link.field_metadata_var_id) + " | " + str(variable_link.field_model_var_name) + " | " + str(variable_link.field_model_var_dim_index) + " | " + str(variable_link.field_model_var_dim_start) + " | " + str(variable_link.field_model_var_dim_end) + " | " + entered_values[variable_link.field_metadata_var_id])
+            input_numbers.append(float(entered_values[variable_link.field_metadata_var_id]))
+        logging.debug(input_numbers)
+        pass
+    return render(request, 'executor.html', context={'model_version': model_version, 'title': parser.get_value(predicate="http://purl.org/dc/terms/title")})
