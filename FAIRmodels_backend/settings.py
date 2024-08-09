@@ -29,6 +29,20 @@ SECRET_KEY = str(os.getenv('SECRET_KEY', 'django-insecure-1234'))
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+        },
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": os.getenv("LOG_LEVEL", "DEBUG"),
+    }
+}
+
 ALLOWED_HOSTS = [
     'localhost',
     'api.fairmodels.org'
