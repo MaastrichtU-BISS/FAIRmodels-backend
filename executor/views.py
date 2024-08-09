@@ -1,7 +1,9 @@
+from pathlib import Path
 from django.shortcuts import render
 from django.http import HttpResponse
 import logging
 from rdflib import Graph, URIRef
+import onnxruntime as ort
 
 from api.models import Fairmodel, FairmodelVersion, VariableLink
 from executor.services import JSONLDParser
@@ -50,5 +52,8 @@ def executor(request, model_id):
             logging.debug(str(variable_link.field_metadata_var_id) + " | " + str(variable_link.field_model_var_name) + " | " + str(variable_link.field_model_var_dim_index) + " | " + str(variable_link.field_model_var_dim_start) + " | " + str(variable_link.field_model_var_dim_end) + " | " + entered_values[variable_link.field_metadata_var_id])
             input_numbers.append(float(entered_values[variable_link.field_metadata_var_id]))
         logging.debug(input_numbers)
+
+        model_path = Path('storage/' + str(model_version.fairmodel.id) + '/' + str(model_version.id))
+        onnx_session = ort.InferenceSession(str(model_path))
         pass
     return render(request, 'executor.html', context={'model_version': model_version, 'title': parser.get_value(predicate="http://purl.org/dc/terms/title")})
