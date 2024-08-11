@@ -15,5 +15,16 @@
                 {% endfor %}
         </table>
         <button type="submit" class="btn btn-primary">Predict</button>
+        {% if onnx_output %}
+            <h2 class="pt-3">ONNX Output</h2>
+            The predicted probabilities are:
+            <table>
+                {% for key, value in onnx_output.items %}
+                    <tr>
+                        <td>{{ value | floatformat:4 }}</td>
+                    </tr>
+                {% endfor %}
+            </table>
+        {% endif %}
     </form>
 {% endblock %}
