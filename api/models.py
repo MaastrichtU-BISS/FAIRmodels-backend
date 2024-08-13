@@ -37,12 +37,15 @@ class FairmodelVersion(models.Model):
         output_path = Path('storage/' + str(self.fairmodel.id) + '/' + str(self.id))
         return isfile(output_path)
 
+class VariableType(models.TextChoices):
+    INPUT = 'INPUT'
+    OUTPUT = 'OUTPUT'
+
+class DataType(models.TextChoices):
+    CATEGORICAL = 'CATEGORICAL'
+    NUMERICAL = 'NUMERICAL'
+
 class VariableLink(models.Model):
-
-    class VariableType(models.TextChoices):
-        INPUT = 'INPUT'
-        OUTPUT = 'OUTPUT'
-
     class Meta:    
         constraints = [
             models.UniqueConstraint(fields=[
@@ -52,8 +55,8 @@ class VariableLink(models.Model):
                 'field_model_var_name',
                 'field_model_var_dim_index',
                 'field_model_var_dim_start',
-                'field_model_var_dim_end'
-            ], name='unique appversion')
+                'field_model_var_dim_end',
+            ], name='unique variablelink')
         ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -63,7 +66,20 @@ class VariableLink(models.Model):
     # reference to field in metadata (to index in list Input/Outcome)
     field_metadata_var_id = models.CharField(max_length=255)
     # reference to field in pmml/onnx representation
+    
     field_model_var_name = models.CharField(max_length=255)
     field_model_var_dim_index = models.IntegerField(null=True)
     field_model_var_dim_start = models.IntegerField(null=True)
     field_model_var_dim_end = models.IntegerField(null=True)
+
+    data_type = models.CharField(choices=DataType.choices, null=True, max_length=16)
+    # if data_type == categorical
+    # [
+    #   {
+    #      "ontology": "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#C48719",
+    #      "name": "T0 TNM Finding",
+    #      "mapping": "1"
+    #   },
+    #   ...
+    # ]
+    categories = models.JSONField(null=True)
