@@ -24,7 +24,7 @@ def index(request):
             'name': model.name,
             'title': parser.get_value(predicate="http://purl.org/dc/terms/title"),
             'version_id': model_version.id,
-            'description': parser.get_value(predicate="http://purl.org/dc/terms/description"),
+            'description': parser.get_value(predicate="http://schema.org/description"),
             'version': model_version.version,
             'created_at': model_version.created_at
         })
