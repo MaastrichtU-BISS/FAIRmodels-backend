@@ -33,9 +33,10 @@ class VariableLinkSerializer(serializers.ModelSerializer):
     field_model_var_dim_start = serializers.IntegerField(required=False)
     field_model_var_dim_end = serializers.IntegerField(required=False)
 
-    data_type = serializers.ChoiceField(choices=DataType.choices)
+    data_type = serializers.ChoiceField(choices=DataType.choices, required=False, allow_null=True)
     # if data_type = category
-    categories = serializers.JSONField(required=False)
+    categories = serializers.JSONField(required=False, allow_null=True)
+    unit = serializers.CharField(required=False, allow_null=True)
     
     class Meta:
         model = VariableLink

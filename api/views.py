@@ -217,6 +217,7 @@ def variables_view(req, model_id, version_id):
     def assign_links(metadata_variable):
         current_link = related_links_db.filter(field_metadata_var_id=metadata_variable["id"]).first()
         encoded_link = None
+        meta = None
         if current_link:
             encoded_link = {
                 "name": current_link.field_model_var_name,
@@ -228,11 +229,23 @@ def variables_view(req, model_id, version_id):
                 encoded_link['linked_dim_start'] = current_link.field_model_var_dim_start
             if current_link.field_model_var_dim_end is not None:
                 encoded_link['linked_dim_end'] = current_link.field_model_var_dim_end
+            
+            if current_link.data_type == 'CATEGORICAL':
+                meta = {
+                    'type': 'CATEGORICAL',
+                    'categories': current_link.categories
+                }
+            if current_link.data_type == 'NUMERICAL':
+                meta = {
+                    'type': 'NUMERICAL',
+                    'unit': current_link.unit
+                }
         
         return {
             "id": metadata_variable["id"],
             "name": metadata_variable["name"],
-            "linked_model_var": encoded_link
+            "linked_model_var": encoded_link,
+            "meta": meta
         }
     
     if req.method == "GET":
@@ -260,21 +273,18 @@ def variables_view(req, model_id, version_id):
                 link_data = {
                     "fairmodel_version": version_id,
                     "variable_type": direction.upper(),
+                    
                     "field_metadata_var_id": item["metadata_id"],
-                    "field_model_var_name": item["link"]["name"],
+                    "field_model_var_name": item["link"].get("name", None),
+                    "field_model_var_dim_index": item["link"].get("linked_dim_index", None),
+                    "field_model_var_dim_start": item["link"].get("linked_dim_start", None),
+                    "field_model_var_dim_end": item["link"].get("linked_dim_end", None),
                 }
 
-                optional_fields = [
-                    ["field_model_var_dim_index", "linked_dim_index"],
-                    ["field_model_var_dim_start", "linked_dim_start"],
-                    ["field_model_var_dim_end", "linked_dim_end"]
-                ]
-
-                for [optional_field_map, optional_field_req] in optional_fields:
-                    if optional_field_req in item["link"]:
-                        link_data[optional_field_map] = item["link"][optional_field_req]
-                
-                print(link_data)
+                meta = item.get("meta", {})
+                link_data["data_type"] = meta.get("type", None)
+                link_data["categories"] = meta.get("categories", None)
+                link_data["unit"] = meta.get("unit", None)
 
                 serialized = VariableLinkSerializer(data=link_data, context={'request': req})
 
@@ -282,20 +292,8 @@ def variables_view(req, model_id, version_id):
                     serialized.save()
                 else:
                     print("failed saving link:", serialized.errors)
-
-        fairmodel_version = FairmodelVersion.objects.get(pk=version_id)
-    
-        vars = {
-            'input': {
-                'metadata': map(assign_links, fairmodel_version.metadata_input_variables),
-                'model': fairmodel_version.model_input_variables
-            },
-            'output': {
-                'metadata': map(assign_links, fairmodel_version.metadata_output_variables),
-                'model': fairmodel_version.model_output_variables
-            },
-        }
-
+                    return Response({'message': serialized.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
         return Response({})
 
     return Response({}, status=status.HTTP_400_BAD_REQUEST)

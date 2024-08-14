@@ -82,4 +82,5 @@ class VariableLink(models.Model):
     #   },
     #   ...
     # ]
-    categories = models.JSONField(null=True)
+    categories = models.JSONField(null=True) # if data_type === categorical
+    unit = models.CharField(null=True, max_length=100) # if data_type === numerical

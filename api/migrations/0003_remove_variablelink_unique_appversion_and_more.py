@@ -28,4 +28,9 @@ class Migration(migrations.Migration):
             model_name='variablelink',
             constraint=models.UniqueConstraint(fields=('fairmodel_version_id', 'variable_type', 'field_metadata_var_id', 'field_model_var_name', 'field_model_var_dim_index', 'field_model_var_dim_start', 'field_model_var_dim_end'), name='unique variablelink'),
         ),
+        migrations.AddField(
+            model_name='variablelink',
+            name='unit',
+            field=models.CharField(max_length=100, null=True),
+        ),
     ]
