@@ -27,7 +27,7 @@
                                     <td><input type="number" name="{{ input_variable.field_metadata_var_id }}" id="{{ input_variable.field_metadata_var_id }}" step=".01"/> {{ input_variable.unit}}</td>
                                 {% elif input_variable.data_type == 'CATEGORICAL' and input_variable.categories is not None %}
                                     <td>
-                                        <select name="">
+                                        <select name="{{ input_variable.field_metadata_var_id }}" id="{{ input_variable.field_metadata_var_id }}">
                                             {% for category_name, category_value in input_variable.categories.items %}
                                                 <option value="{{ category_value }}">{{ category_name }}</option>
                                             {% endfor %}
