@@ -50,7 +50,6 @@ def executor(request, model_id):
         return render(request, 'executor.html', context={
             'model_version': model_version,
             'title': parser.get_value(predicate="http://purl.org/dc/terms/title"),
-            'variable_name_cache': variable_name_cache,
             'variable_links': {
                 'input': input_variable_links,
                 'output': output_variable_links
@@ -94,7 +93,6 @@ def executor(request, model_id):
             return render(request, 'executor.html', context={
                 'model_version': model_version,
                 'title': parser.get_value(predicate="http://purl.org/dc/terms/title"),
-                'variable_name_cache': variable_name_cache,
                 'variable_links': {
                     'input': input_variable_links,
                     'output': output_variable_links
@@ -105,7 +103,6 @@ def executor(request, model_id):
             return render(request, 'executor.html', context={
                 'model_version': model_version,
                 'title': parser.get_value(predicate="http://purl.org/dc/terms/title"),
-                'variable_name_cache': variable_name_cache,
                 'variable_links': {
                     'input': input_variable_links,
                     'output': output_variable_links
