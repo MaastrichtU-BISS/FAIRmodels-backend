@@ -41,18 +41,27 @@
                     </tbody>
                 </table>
                 <button type="submit" class="btn btn-primary">Predict</button>
-                {% if onnx_output %}
-                    <h2 class="pt-3">ONNX Output</h2>
+            </form>
+        </div>
+        {% if onnx_output %}
+            <div class="row mt-3">
+                <div class="col-3">
+                    <h2 class="pt-3">Model Output</h2>
                     The predicted probabilities are:
                     <table class="table table-bordered">
+                        <tr>
+                            <th>Predicted class</th>
+                            <th>Probability</th>
+                        </tr>
                         {% for key, value in onnx_output.items %}
                             <tr>
+                                <th>{{ key }}</th>
                                 <td>{{ value | floatformat:4 }}</td>
                             </tr>
                         {% endfor %}
                     </table>
-                {% endif %}
-            </form>
-        </div>
+                </div>
+            </div>
+        {% endif %}
     </div>
 {% endblock %}
