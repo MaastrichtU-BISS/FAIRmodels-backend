@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Fairmodel, FairmodelVersion, VariableLink
+from .models import DataType, Fairmodel, FairmodelVersion, VariableLink, VariableType
 
 class FairmodelSerializer(serializers.ModelSerializer):
     class Meta:
@@ -25,13 +25,18 @@ class FairmodelVersionSerializer(serializers.ModelSerializer):
 class VariableLinkSerializer(serializers.ModelSerializer):
 
     # fairmodel_version = serializers.ForeignKey(FairmodelVersion, on_delete=models.CASCADE)
-    variable_type = serializers.ChoiceField(choices=['INPUT', 'OUTPUT'])
+    variable_type = serializers.ChoiceField(choices=VariableType.choices)
 
     field_metadata_var_id = serializers.CharField(max_length=255)
     field_model_var_name = serializers.CharField(max_length=255)
     field_model_var_dim_index = serializers.IntegerField(required=False)
     field_model_var_dim_start = serializers.IntegerField(required=False)
     field_model_var_dim_end = serializers.IntegerField(required=False)
+
+    data_type = serializers.ChoiceField(choices=DataType.choices, required=False, allow_null=True)
+    # if data_type = category
+    categories = serializers.JSONField(required=False, allow_null=True)
+    unit = serializers.CharField(required=False, allow_null=True)
     
     class Meta:
         model = VariableLink

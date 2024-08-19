@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <div class="container">
+        <div class="row mt-5">
+            <h1>FAIR4AI Model Executor</h1>
+            <p>
+                <a href="/executor" class="mb-2 link-underline link-underline-opacity-0 link-underline-opacity-100-hover">Back to all models</a>
+            </p>
+            <p>Model: {{ title }}</p>
+        </div>
+        <div class="row mt-3">
+            <form method="post">
+                {% csrf_token %}
+                {% if error %}
+                    <div class="alert alert-danger" role="alert">
+                        <p class="fw-bold">Something went wrong</p>
+                        <span>{{ error }}</span>
+                    </div>
+                {% endif %}
+                <table class="table">
+                    <tbody>
+                        {% for input_variable in variable_links.input %}
+                            <tr>
+                                <th>{{ input_variable.field_metadata_var_name }}</th>
+                                {% if input_variable.data_type == 'NUMERICAL' and input_variable.unit is not None %}
+                                    <td><input type="number" name="{{ input_variable.field_metadata_var_id }}" id="{{ input_variable.field_metadata_var_id }}" step=".01"/> {{ input_variable.unit}}</td>
+                                {% elif input_variable.data_type == 'CATEGORICAL' and input_variable.categories is not None %}
+                                    <td>
+                                        <select name="{{ input_variable.field_metadata_var_id }}" id="{{ input_variable.field_metadata_var_id }}">
+                                            {% for category_name, category_value in input_variable.categories.items %}
+                                                <option value="{{ category_value }}">{{ category_name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </td>
+                                {% else %}
+                                    <td><input type="number" name="{{ input_variable.field_metadata_var_id }}" id="{{ input_variable.field_metadata_var_id }}" step=".01"/></td>
+                                {% endif %}
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                <button type="submit" class="btn btn-primary">Predict</button>
+            </form>
+        </div>
+        {% if onnx_output %}
+            <div class="row mt-3">
+                <div class="col-3">
+                    <h2 class="pt-3">Model Output</h2>
+                    The predicted probabilities are:
+                    <table class="table table-bordered">
+                        <tr>
+                            <th>Predicted class</th>
+                            <th>Probability</th>
+                        </tr>
+                        {% for key, value in onnx_output.items %}
+                            <tr>
+                                <th>{{ key }}</th>
+                                <td>{{ value | floatformat:4 }}</td>
+                            </tr>
+                        {% endfor %}
+                    </table>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}
