@@ -2,7 +2,7 @@ from pathlib import Path
 from django.shortcuts import render
 from django.http import HttpResponse
 import logging
-from rdflib import Graph, URIRef
+from rdflib import RDFS, Graph, URIRef
 import onnxruntime as ort
 
 from api.models import Fairmodel, FairmodelVersion, VariableLink, VariableType
@@ -46,12 +46,18 @@ def executor(request, model_id):
     output_variable_links = variable_links.filter(variable_type=VariableType.OUTPUT).all()
 
     if request.method == 'GET':
+        input_names = [ ]
+        for input_variable_link in input_variable_links:
+            name = parser.get_value(RDFS.label, subject=input_variable_link.field_metadata_var_id)
+            input_variable_link.field_metadata_var_name = name
+        
         # Show the view to enter the input values
         return render(request, 'executor.html', context={
             'model_version': model_version,
             'title': parser.get_value(predicate="http://purl.org/dc/terms/title"),
             'variable_links': {
                 'input': input_variable_links,
+                'input_names': input_names,
                 'output': output_variable_links
             }
         })

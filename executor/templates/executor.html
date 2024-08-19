@@ -22,7 +22,7 @@
                     <tbody>
                         {% for input_variable in variable_links.input %}
                             <tr>
-                                <th>{{ input_variable.field_metadata_var_id }}</th>
+                                <th>{{ input_variable.field_metadata_var_name }}</th>
                                 {% if input_variable.data_type == 'NUMERICAL' and input_variable.unit is not None %}
                                     <td><input type="number" name="{{ input_variable.field_metadata_var_id }}" id="{{ input_variable.field_metadata_var_id }}" step=".01"/> {{ input_variable.unit}}</td>
                                 {% elif input_variable.data_type == 'CATEGORICAL' and input_variable.categories is not None %}
