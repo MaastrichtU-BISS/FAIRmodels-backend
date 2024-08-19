@@ -2,10 +2,10 @@ from pathlib import Path
 from django.shortcuts import render
 from django.http import HttpResponse
 import logging
-from rdflib import Graph, URIRef
+from rdflib import RDFS, Graph, URIRef
 import onnxruntime as ort
 
-from api.models import Fairmodel, FairmodelVersion, VariableLink
+from api.models import Fairmodel, FairmodelVersion, VariableLink, VariableType
 from executor.services import JSONLDParser
 
 # Create your views here.
@@ -39,10 +39,28 @@ def executor(request, model_id):
     parser = JSONLDParser(json_ld_object=model_version.metadata_json)
     logging.debug("==================================")
     logging.debug(model_version.metadata_input_variables)
+    logging.debug(model_version)
     
+    variable_links = VariableLink.objects.filter(fairmodel_version=model_version).order_by("field_model_var_dim_start").all()
+    input_variable_links = variable_links.filter(variable_type=VariableType.INPUT).all()
+    output_variable_links = variable_links.filter(variable_type=VariableType.OUTPUT).all()
+
     if request.method == 'GET':
+        input_names = [ ]
+        for input_variable_link in input_variable_links:
+            name = parser.get_value(RDFS.label, subject=input_variable_link.field_metadata_var_id)
+            input_variable_link.field_metadata_var_name = name
+        
         # Show the view to enter the input values
-        return render(request, 'executor.html', context={'model_version': model_version, 'title': parser.get_value(predicate="http://purl.org/dc/terms/title")})
+        return render(request, 'executor.html', context={
+            'model_version': model_version,
+            'title': parser.get_value(predicate="http://purl.org/dc/terms/title"),
+            'variable_links': {
+                'input': input_variable_links,
+                'input_names': input_names,
+                'output': output_variable_links
+            }
+        })
     elif request.method == 'POST':
         # Execute the model
         try:
@@ -52,11 +70,11 @@ def executor(request, model_id):
             logging.debug(entered_values)
 
             # Match the entered values with the model input variables and add them in the correct order
-            variable_links = VariableLink.objects.filter(fairmodel_version=model_version).order_by("field_model_var_dim_start").all()
+            # variable_links = VariableLink.objects.filter(fairmodel_version=model_version).order_by("field_model_var_dim_start").all()
             input_numbers = { }
             logging.debug("================Loop over variable links================")
             for variable_link in variable_links:
-                if variable_link.variable_type != VariableLink.VariableType.INPUT:
+                if variable_link.variable_type != VariableType.INPUT:
                     continue
                 
                 try:
@@ -81,12 +99,20 @@ def executor(request, model_id):
             return render(request, 'executor.html', context={
                 'model_version': model_version,
                 'title': parser.get_value(predicate="http://purl.org/dc/terms/title"),
+                'variable_links': {
+                    'input': input_variable_links,
+                    'output': output_variable_links
+                },
                 'onnx_output': onnx_output
             })
         except Exception as err:
             return render(request, 'executor.html', context={
                 'model_version': model_version,
                 'title': parser.get_value(predicate="http://purl.org/dc/terms/title"),
+                'variable_links': {
+                    'input': input_variable_links,
+                    'output': output_variable_links
+                },
                 'error': err,
             })
 
