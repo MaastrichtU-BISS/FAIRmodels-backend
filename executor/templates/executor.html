@@ -57,7 +57,7 @@
                 <button type="submit" class="btn btn-primary">Predict</button>
             </form>
         </div>
-        {% if onnx_output %}
+        {% if model_output %}
             <div class="row mt-3">
                 <div class="col-3">
                     <h2 class="pt-3">Model Output</h2>
@@ -67,7 +67,7 @@
                             <th>Predicted class</th>
                             <th>Probability</th>
                         </tr>
-                        {% for key, value in onnx_output.items %}
+                        {% for key, value in model_output.items %}
                             <tr>
                                 <th>{{ key }}</th>
                                 <td>{{ value | floatformat:4 }}</td>
