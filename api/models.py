@@ -65,6 +65,7 @@ class VariableLink(models.Model):
 
     # reference to field in metadata (to index in list Input/Outcome)
     field_metadata_var_id = models.CharField(max_length=255)
+    field_metadata_var_name = ""
     # reference to field in pmml/onnx representation
     
     field_model_var_name = models.CharField(max_length=255)
