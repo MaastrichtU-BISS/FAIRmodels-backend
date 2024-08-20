@@ -241,12 +241,16 @@ def variables_view(req, model_id, version_id):
                     'unit': current_link.unit
                 }
         
-        return {
+        links = {
             "id": metadata_variable["id"],
             "name": metadata_variable["name"],
             "linked_model_var": encoded_link,
-            "meta": meta
         }
+
+        if meta: links['meta'] = meta
+        if encoded_link: links['encoded_link'] = encoded_link
+        
+        return links
     
     if req.method == "GET":
 
