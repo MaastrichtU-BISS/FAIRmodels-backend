@@ -94,6 +94,14 @@ def executor(request, model_id):
             logging.debug(onnx_output)
             onnx_output = onnx_output[1][0]
 
+            # replace output values with the names of the variables
+            output_variable = output_variable_links[0]
+            logging.debug(output_variable.categories)
+            model_output = {}
+            for key,value in output_variable.categories.items():
+                model_output[key] = onnx_output[value]
+            logging.debug(model_output)
+
             return render(request, 'executor.html', context={
                 'model_version': model_version,
                 'title': parser.get_value(predicate="http://purl.org/dc/terms/title"),
@@ -102,7 +110,7 @@ def executor(request, model_id):
                     'output': output_variable_links
                 },
                 'entered_values': entered_values,
-                'onnx_output': onnx_output
+                'model_output': model_output
             })
         except Exception as err:
             return render(request, 'executor.html', context={
