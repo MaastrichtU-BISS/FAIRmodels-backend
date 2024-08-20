@@ -29,14 +29,14 @@ class VariableLinkSerializer(serializers.ModelSerializer):
 
     field_metadata_var_id = serializers.CharField(max_length=255)
     field_model_var_name = serializers.CharField(max_length=255)
-    field_model_var_dim_index = serializers.IntegerField(required=False)
-    field_model_var_dim_start = serializers.IntegerField(required=False)
-    field_model_var_dim_end = serializers.IntegerField(required=False)
+    field_model_var_dim_index = serializers.IntegerField(required=False, allow_null=True)
+    field_model_var_dim_start = serializers.IntegerField(required=False, allow_null=True)
+    field_model_var_dim_end = serializers.IntegerField(required=False, allow_null=True)
 
     data_type = serializers.ChoiceField(choices=DataType.choices, required=False, allow_null=True)
     # if data_type = category
     categories = serializers.JSONField(required=False, allow_null=True)
-    unit = serializers.CharField(required=False, allow_null=True)
+    unit = serializers.CharField(required=False, allow_null=True, allow_blank=True)
     
     class Meta:
         model = VariableLink
